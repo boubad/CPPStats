@@ -130,7 +130,10 @@ public:
 		assert(irow < aa.size());
 		return (aa[irow]);
 	} // get_row_value
-	void get_col_values(size_t icol, AnyVectorType &vv) const {
+public:
+	template<class ALLOCA>
+	void get_col_values(size_t icol,
+			std::vector<boost::any, ALLOCA> &vv) const {
 		assert(icol < this->m_categs.size());
 		const AnyArrayType & aa = this->m_data;
 		const size_t n = aa.size();
@@ -139,9 +142,29 @@ public:
 			vv[i] = (aa[i])[icol];
 		} // i
 	} // get_col_values
-	template<class ALLOCT>
+	template<class INPUTITERATOR, class ALLOCA>
+	void get_col_values(size_t icol, INPUTITERATOR start, INPUTITERATOR last,
+			std::vector<boost::any, ALLOCA> &oRes) const {
+		assert(icol < this->m_categs.size());
+		oRes.clear();
+		const AnyArrayType & aa = this->m_data;
+		for (auto it = start; it != last; ++it) {
+			const size_t irow = (size_t)(*it);
+			assert(irow < aa.size());
+			const AnyVectorType &vv = aa[irow];
+			assert(icol < vv.size());
+			const boost::any v = vv[icol];
+			oRes.push_back(v);
+		} // it
+	} // get_col_values
+	template<class CONTAINER, class ALLOCA>
+	void get_col_values(size_t icol, const CONTAINER &cont,
+			std::vector<boost::any, ALLOCA> &oRes) const {
+		this->get_col_values(icol, cont.begin(), cont.end(), oRes);
+	} // get_col_values
+	template<typename T, class ALLOCT>
 	void get_col_valid_indexes(size_t icol,
-			std::set<size_t, std::less<size_t>, ALLOCT> &oIndexes) const {
+			std::set<T, std::less<T>, ALLOCT> &oIndexes) const {
 		assert(icol < this->m_categs.size());
 		const AnyArrayType & aa = this->m_data;
 		const size_t n = aa.size();
@@ -149,12 +172,47 @@ public:
 		for (size_t i = 0; i < n; ++i) {
 			const boost::any &v = (aa[i])[icol];
 			if (!v.empty()) {
-				oIndexes.insert(i);
+				T ii = (T)i;
+				oIndexes.insert(ii);
 			}
 		} // i
 	} // get_col_valid_indexes
-	template<typename Z, class ALLOCZ>
-	bool get_col_norm_values(size_t icol, AnyVectorType &oNorm,
+	template<typename W, class ALLOCW,typename T, class ALLOCT>
+	void get_indexes(const std::set<W,std::less<W>,ALLOCW> &oCols,
+			std::set<T, std::less<T>, ALLOCT> &oIndexes) const {
+		oIndexes.clear();
+		auto istart = oCols.begin();
+		for (auto it = istart; it != oCols.end(); ++it) {
+			std::set<T, std::less<T>, ALLOCT> cur;
+			const size_t icol = (size_t)(*it);
+			this->get_col_valid_indexes(icol, cur);
+			if (it == istart) {
+				oIndexes = cur;
+			} else {
+				if (oIndexes.empty()){
+					break;
+				}
+				std::set<T, std::less<T>, ALLOCT> oDel;
+				auto jlast = oIndexes.end();
+				for (auto jt = oIndexes.begin(); jt != jlast; ++jt) {
+					T jindex = *jt;
+					if (cur.find(jindex) == cur.end()) {
+						oDel.insert(jindex);
+					}
+				} // jt
+				std::for_each(oDel.begin(), oDel.end(), [&](T jdel) {
+					auto rindex = oIndexes.find(jdel);
+					if (rindex != oIndexes.end()) {
+						oIndexes.erase(rindex);
+					}
+				});
+			}
+		} // it
+	} // get_indexes
+
+	template<class ALLOCA, typename Z, class ALLOCZ>
+	bool get_col_norm_values(size_t icol,
+			std::vector<boost::any, ALLOCA> &oNorm,
 			std::vector<Z, ALLOCZ> &oClasses) const {
 		oNorm.clear();
 		oClasses.clear();
@@ -229,8 +287,9 @@ public:
 		} // i
 		return (true);
 	} //get_col_norm_values
-	template<typename Z, class ALLOCZ>
-	bool get_col_factor_values(size_t icol, AnyVectorType &oNorm,
+	template<class ALLOCA, typename Z, class ALLOCZ>
+	bool get_col_factor_values(size_t icol,
+			std::vector<boost::any, ALLOCA> &oNorm,
 			std::vector<Z, ALLOCZ> &oClasses) const {
 		oNorm.clear();
 		oClasses.clear();
@@ -283,7 +342,9 @@ public:
 		} // i
 		return (true);
 	} //get_col_factor_values
-	bool get_col_valid_stringvector(size_t icol, StringVectorType &oRes) const {
+	template<class ALLOCS>
+	bool get_col_valid_stringvector(size_t icol,
+			std::vector<StringType, ALLOCS> &oRes) const {
 		assert(icol < this->m_categs.size());
 		oRes.clear();
 		bool bRet = false;

@@ -64,6 +64,7 @@ void mytest_two() {
 	}
 } // mytest_two
 void mytest_three() {
+	typedef int IndexType;
 	ImportData<> oData;
 	typedef ImportData<>::AnyVectorType AnyVectorType;
 	wifstream in(TEST_FILENAME);
@@ -71,17 +72,26 @@ void mytest_three() {
 	wchar_t delim = L'\t';
 	oData.open(in, delim, na);
 	size_t ncols = oData.cols();
+	set<IndexType> colindexes;
+	vector<wstring> names;
 	for (size_t icol = 0; icol < ncols; ++icol) {
 		AnyVectorType v;
-		vector<short> oIndexes;
+		set<IndexType> oIndexes;
 		wstring name = oData.colname(icol);
-		if (oData.is_num_var(icol)) {
-			oData.get_col_norm_values(icol, v, oIndexes);
-		} else {
-			oData.get_col_factor_values(icol, v, oIndexes);
+		names.push_back(name);
+		colindexes.insert((IndexType)icol);
+		oData.get_indexes(colindexes, oIndexes);
+		if (oIndexes.empty()){
+			break;
 		}
-		wcout << std::endl << name << std::endl;
-		wcout << v << std::endl << oIndexes << std::endl;
+		wcout << std::endl;
+		for (auto it = names.begin(); it != names.end(); ++it){
+			if (it != names.begin()){
+				wcout << L"\t";
+			}
+			wcout << (*it);
+		}
+		wcout << std::endl << L"Nb. vals: " << oIndexes.size() << std::endl;
 	} // icol
 } // mytest_three
 /////////////////////////////////

@@ -27,6 +27,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <valarray>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
