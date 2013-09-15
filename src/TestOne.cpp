@@ -84,6 +84,8 @@ void mytest_three() {
 		if (oIndexes.empty()){
 			break;
 		}
+		vector<boost::any> vx;
+		oData.get_col_values(icol,oIndexes,vx);
 		wcout << std::endl;
 		for (auto it = names.begin(); it != names.end(); ++it){
 			if (it != names.begin()){
@@ -91,7 +93,7 @@ void mytest_three() {
 			}
 			wcout << (*it);
 		}
-		wcout << std::endl << L"Nb. vals: " << oIndexes.size() << std::endl;
+		wcout << std::endl << L"Nb. vals: " << oIndexes.size() << L"/" << vx.size() << std::endl;
 	} // icol
 } // mytest_three
 /////////////////////////////////
