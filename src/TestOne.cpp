@@ -6,12 +6,24 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 #include "importdata.h"
-
+/////////////////////////////
+#include "../sqlite/database.h"
+//////////////////////////////
 using namespace std;
 using namespace intra;
+using namespace sqlite;
 ///////////////////////////////////
 const char *TEST_FILENAME = "./data/source.csv";
 const wchar_t *TEST_WFILENAME = L"./data/source.csv";
+const char *TEST_DATABASE_FILE = "./data/testbase.db";
+/////////////////////////////////////
+void mytest_db(void){
+	Database oBase;
+	bool bRet = oBase.open(TEST_DATABASE_FILE);
+	if (bRet){
+		bRet = oBase.close();
+	}
+}// mytest_db
 ////////////////////////////////
 void mytest_one() {
 	cout << std::endl << "STRING" << std::endl;
@@ -101,7 +113,8 @@ int main(int argc, char *argv[]) {
 	wcout << L"!!!Hello World!!!" << endl; // prints !!!Hello World!!!
 	//mytest_one();
 	//mytest_two();
-	mytest_three();
+	//mytest_three();
+	mytest_db();
 	wcout << std::endl << std::endl;
 	wcout << L"Entrez un nombre pour quitter. :" << std::endl;
 	int x;
