@@ -177,8 +177,8 @@ public:
 			}
 		} // i
 	} // get_col_valid_indexes
-	template<typename W, class ALLOCW,typename T, class ALLOCT>
-	void get_indexes(const std::set<W,std::less<W>,ALLOCW> &oCols,
+	template<class CONTAINER,typename T, class ALLOCT>
+	void get_indexes(const CONTAINER &oCols,
 			std::set<T, std::less<T>, ALLOCT> &oIndexes) const {
 		oIndexes.clear();
 		auto istart = oCols.begin();
@@ -287,6 +287,31 @@ public:
 		} // i
 		return (true);
 	} //get_col_norm_values
+	template <typename T, class ALLOCT,class ALLOCANY,class ALLOCPAIR>
+	void get_values(const std::vector<T,ALLOCT> &oCols,
+			std::map<T,std::vector<boost::any,ALLOCANY>,std::less<T>,ALLOCPAIR > &oMap) const{
+		oMap.clear();
+		const AnyArrayType &oAr = this->m_data;
+		std::set<T,std::less<T>,ALLOCT> oIndexes;
+		this->get_indexes(oCols,oIndexes);
+		size_t nc = oCols.size();
+		auto jstart = oCols.begin();
+		auto jend = oCols.end();
+		for (auto it = oIndexes.begin();it != oIndexes.end();++it){
+			size_t irow = (size_t)(*it);
+			assert(irow < oAr.size());
+			const AnyVectorType & vx = oAr[irow];
+			std::vector<boost::any,ALLOCANY> vv(nc);
+			T icur = 0;
+			for (auto jt = jstart; jt != jend; ++jt){
+				size_t icol = (size_t)(*jt);
+				assert(icol < vx.size());
+				boost::any xa = vx[icol];
+				vv[icur++] = xa;
+			}// jt
+			oMap[(T)irow] = vv;
+		}// it
+	}// getValues
 	template<class ALLOCA, typename Z, class ALLOCZ>
 	bool get_col_factor_values(size_t icol,
 			std::vector<boost::any, ALLOCA> &oNorm,

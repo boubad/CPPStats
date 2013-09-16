@@ -145,17 +145,11 @@ public:
 		return (this->m_pdata);
 	}
 	void reset(void) {
-		if (this->m_pdata != nullptr) {
-			DataTypeAllocator().deallocate(this->m_pdata, 0);
-			this->m_pdata = nullptr;
-		}
+		this->deallocate();
 		this->m_n = 0;
 	}
 	void clear(void) {
-		if (this->m_pdata != nullptr) {
-			DataTypeAllocator().deallocate(this->m_pdata, 0);
-			this->m_pdata = nullptr;
-		}
+		this->deallocate();
 		this->m_n = 0;
 	}
 	template<typename W>
