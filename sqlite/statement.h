@@ -44,8 +44,8 @@ public:
 	bool set_parameter(int iParam, const wchar_t *pwszVal);
 	bool set_parameter(int iParam, const std::string &sVal);
 	bool set_parameter(int iParam, const std::wstring &sVal);
-	bool exec(void);
-	bool next(void);
+	bool exec(bool &bDone);
+	bool next(bool &bDone);
 	int cols(void) const {
 		return ((int) this->m_vals.size());
 	}

@@ -154,50 +154,74 @@ bool Statement::is_valid(void) const {
 	return ((this->m_pBase != nullptr) && m_pBase->is_open()
 			&& (this->m_pstmt != nullptr));
 } // is_valid
-bool Statement::exec(void) {
+bool Statement::exec(bool &bDone) {
 	assert(this->is_valid());
-	this->m_lastcode = SQLITE_OK;
-	::sqlite3_stmt *p = this->m_pstmt;
-	int rc = ::sqlite3_step(p);
-	this->m_lastcode = rc;
-	if (rc == SQLITE_DONE) {
-		return (true);
-	} else if (rc != SQLITE_ROW) {
-		this->m_pBase->internal_get_error();
-		return (false);
-	}
-	return (true);
-} // exec
-bool Statement::next(void) {
-	assert(this->is_valid());
-	int rc = this->m_lastcode;
-	if (rc == SQLITE_DONE) {
-		return (false);
-	} else if ((rc != SQLITE_OK) && (rc != SQLITE_ROW)) {
-		return (false);
-	}
+	bDone = false;
 	std::vector<std::string> &vals = this->m_vals;
 	std::vector<int> & types = this->m_types;
 	::sqlite3_stmt *p = this->m_pstmt;
 	vals.clear();
 	types.clear();
-	if (this->m_lastcode == SQLITE_OK) {
-		rc = ::sqlite3_step(p);
-		this->m_lastcode = rc;
-		if ((rc != SQLITE_DONE) && (rc != SQLITE_ROW)) {
-			this->m_pBase->internal_get_error();
-			return (false);
+	this->m_lastcode = SQLITE_OK;
+	int rc = ::sqlite3_step(p);
+	this->m_lastcode = rc;
+	if (rc == SQLITE_DONE) {
+		bDone = true;
+		return (true);
+	} else if (rc != SQLITE_ROW) {
+		this->m_pBase->internal_get_error();
+		return (false);
+	} else {
+		int nCount = ::sqlite3_column_count(p);
+		if (nCount < 1) {
+			return (true);
 		}
-		if (rc == SQLITE_DONE) {
-			return (false);
-		}
+		types.resize(nCount);
+		vals.resize(nCount);
+		for (int icol = 0; icol < nCount; ++icol) {
+			int ntype = ::sqlite3_column_type(p, icol);
+			types[icol] = ntype;
+			if (ntype != SQLITE_NULL) {
+				const unsigned char *ptext = ::sqlite3_column_text(p, icol);
+				std::string sval;
+				if (ptext != nullptr) {
+					const char *ps = reinterpret_cast<const char *>(ptext);
+					size_t n = ::strlen(ps);
+					std::string ss(n, ' ');
+					std::copy(ps, ps + n, ss.begin());
+					sval = ss;
+				}
+				vals[icol] = sval;
+			} // not null
+		} // icol
 	}
+	return (true);
+} // exec
+bool Statement::next(bool &bDone) {
+	bDone = false;
+	assert(this->is_valid());
+	int rc = this->m_lastcode;
+	if (rc != SQLITE_ROW) {
+		bDone = true;
+		return (false);
+	}
+	::sqlite3_stmt *p = this->m_pstmt;
+	rc = ::sqlite3_step(p);
+	this->m_lastcode = rc;
+	if (rc != SQLITE_ROW) {
+		bDone = true;
+		return (false);
+	}
+	std::vector<std::string> &vals = this->m_vals;
+	std::vector<int> & types = this->m_types;
+	vals.clear();
+	types.clear();
 	int nCount = ::sqlite3_column_count(p);
 	if (nCount < 1) {
 		return (true);
 	}
-	vals.resize(nCount);
 	types.resize(nCount);
+	vals.resize(nCount);
 	for (int icol = 0; icol < nCount; ++icol) {
 		int ntype = ::sqlite3_column_type(p, icol);
 		types[icol] = ntype;
@@ -214,6 +238,9 @@ bool Statement::next(void) {
 			vals[icol] = sval;
 		} // not null
 	} // icol
+	if (rc != SQLITE_ROW) {
+		bDone = true;
+	}
 	return (true);
 } // next
 void Statement::force_close(void) {

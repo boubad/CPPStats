@@ -64,6 +64,9 @@ public:
 	} // get_last_error
 	bool close(void);
 	bool exec_sql(const char *pszSQL);
+	bool exec_sql(const wchar_t *pwszSQL);
+	bool exec_sql(const std::string &s);
+	bool exec_sql(const std::wstring &ss);
 protected:
 	virtual void prepare_close(void);
 	void internal_clear_error(void);

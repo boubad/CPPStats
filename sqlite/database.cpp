@@ -82,12 +82,12 @@ Database::~Database() {
 }
 void Database::prepare_close(void) {
 	std::list<PStatement> &oList = this->m_stmts;
-	for (auto it = oList.begin(); it != oList.end(); ++it){
+	for (auto it = oList.begin(); it != oList.end(); ++it) {
 		PStatement px = *it;
-		if (px != nullptr){
+		if (px != nullptr) {
 			px->force_close();
 		}
-	}// it
+	} // it
 	oList.clear();
 } // prepare_close
 bool Database::close(void) {
@@ -106,21 +106,34 @@ bool Database::close(void) {
 	return (bRet);
 } // close
 ///////////////////////////////
-bool Database::exec_sql(const char *pszSQL){
+bool Database::exec_sql(const char *pszSQL) {
 	assert(pszSQL != nullptr);
 	::sqlite3 *p = this->m_pDb;
-	if (p == nullptr){
+	if (p == nullptr) {
 		return (false);
 	}
 	char *error = nullptr;
-	int rc = ::sqlite3_exec(p,pszSQL,nullptr,nullptr,&error);
-	if (error != nullptr){
+	int rc = ::sqlite3_exec(p, pszSQL, nullptr, nullptr, &error);
+	if (error != nullptr) {
 		this->m_errorcode = rc;
 		this->m_errorstring = error;
 		::sqlite3_free(error);
 		return (false);
 	}
 	return (rc == SQLITE_OK);
-}// exec_sql
+} // exec_sql
+bool Database::exec_sql(const wchar_t *pwszSQL) {
+	assert(pwszSQL != nullptr);
+	std::wstring ss(pwszSQL);
+	std::string s(ss.length(), ' ');
+	std::copy(ss.begin(), ss.end(), s.begin());
+	return this->exec_sql(s.c_str());
+} // exex_sql
+bool Database::exec_sql(const std::string &s) {
+	return this->exec_sql(s.c_str());
+} // exec_sql
+bool Database::exec_sql(const std::wstring &ss) {
+	return this->exec_sql(ss.c_str());
+} // exec_sql
 ////////////////////////////
 } /* namespace sqlite */

@@ -287,7 +287,7 @@ public:
 		} // i
 		return (true);
 	} //get_col_norm_values
-	template <typename T, class ALLOCT,class ALLOCANY,class ALLOCPAIR>
+	template <typename T, class ALLOCT,class ALLOCPAIR>
 	void get_values(const std::vector<T,ALLOCT> &oCols,
 			std::map<T,std::vector<boost::any,ALLOCANY>,std::less<T>,ALLOCPAIR > &oMap) const{
 		oMap.clear();
