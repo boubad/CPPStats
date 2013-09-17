@@ -12,9 +12,13 @@
 ///////////////////////////
 #include <cassert>
 #include <string>
+#include <list>
 #include <algorithm>
 //////////////////////////
 namespace sqlite {
+////////////////////////////////////////
+class Statement;
+typedef Statement *PStatement;
 ////////////////////////////////////////
 class Database {
 	friend class Statement;
@@ -22,6 +26,7 @@ private:
 	int m_errorcode;
 	::sqlite3 *m_pDb;
 	std::string m_errorstring;
+	std::list<PStatement> m_stmts;
 public:
 	Database();
 	Database(const char *pszFilename);

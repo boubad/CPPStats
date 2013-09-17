@@ -6,6 +6,7 @@
  */
 
 #include "database.h"
+#include "statement.h"
 ////////////////////////////////
 namespace sqlite {
 ////////////////////////////////////////////
@@ -80,7 +81,14 @@ Database::~Database() {
 	this->close();
 }
 void Database::prepare_close(void) {
-
+	std::list<PStatement> &oList = this->m_stmts;
+	for (auto it = oList.begin(); it != oList.end(); ++it){
+		PStatement px = *it;
+		if (px != nullptr){
+			px->force_close();
+		}
+	}// it
+	oList.clear();
 } // prepare_close
 bool Database::close(void) {
 	this->internal_clear_error();
@@ -107,6 +115,7 @@ bool Database::exec_sql(const char *pszSQL){
 	char *error = nullptr;
 	int rc = ::sqlite3_exec(p,pszSQL,nullptr,nullptr,&error);
 	if (error != nullptr){
+		this->m_errorcode = rc;
 		this->m_errorstring = error;
 		::sqlite3_free(error);
 		return (false);

@@ -16,13 +16,60 @@ using namespace sqlite;
 const char *TEST_FILENAME = "./data/source.csv";
 const wchar_t *TEST_WFILENAME = L"./data/source.csv";
 const char *TEST_DATABASE_FILE = "./data/testbase.db";
+////////////////////////////////////////
+const char *SQL_CREATE_DATASET = "CREATE TABLE IF NOT EXISTS dbdataset("
+		" datasetid INTEGER PRIMARY KEY AUTOINCREMENT,"
+		" optlock INTEGER NOT NULL DEFAULT 1,"
+		" sigle TEXT NOT NULL UNIQUE,"
+		" nom TEXT DEFAULT NULL,"
+		" description TEXT DEFAULT NULL"
+		" )";
+const char *SQL_CREATE_VARIABLE = "CREATE TABLE IF NOT EXISTS dbvariable("
+		" variableid INTEGER PRIMARY KEY AUTOINCREMENT,"
+		" optlock INTEGER NOT NULL DEFAULT 1,"
+		" datasetid INTEGER NOT NULL,"
+		" sigle TEXT NOT NULL,"
+		" vartype TEXT NOT NULL,"
+		" categvar INTEGER NOT NULL DEFAULT 1,"
+		" nom TEXT DEFAULT NULL,"
+		" description TEXT DEFAULT NULL,"
+		" CONSTRAINT uc_variable UNIQUE (datasetid, sigle),"
+		" CONSTRAINT fk_variable_dataset FOREIGN KEY (datasetid) REFERENCES dbdataset (datasetid) ON DELETE CASCADE"
+		" )";
+const char *SQL_CREATE_INDIV = "CREATE TABLE IF NOT EXISTS dbindiv("
+		" individ INTEGER PRIMARY KEY AUTOINCREMENT,"
+		" optlock INTEGER NOT NULL DEFAULT 1,"
+		" datasetid INTEGER NOT NULL,"
+		" sigle TEXT NOT NULL,"
+		" nom TEXT DEFAULT NULL,"
+		" description TEXT DEFAULT NULL,"
+		" CONSTRAINT uc_indiv UNIQUE (datasetid, sigle),"
+		" CONSTRAINT fk_indiv_dataset FOREIGN KEY (datasetid) REFERENCES dbdataset (datasetid) ON DELETE CASCADE"
+		" )";
+const char *SQL_CREATE_VALUE = "CREATE TABLE IF NOT EXISTS dbvalue("
+		" valueid INTEGER PRIMARY KEY AUTOINCREMENT,"
+		" optlock INTEGER NOT NULL DEFAULT 1,"
+		" variableid INTEGER NOT NULL,"
+		" individ INTEGER NOT NULL,"
+		" stringval TEXT NULL,"
+		" CONSTRAINT uc_value UNIQUE (variableid, individ),"
+		" CONSTRAINT fk_value_variable FOREIGN KEY (variableid) REFERENCES dbvariable (variableid) ON DELETE CASCADE,"
+		" CONSTRAINT fk_value_indiv FOREIGN KEY (individ) REFERENCES dbindiv (individ) ON DELETE CASCADE"
+		" )";
 /////////////////////////////////////
 void mytest_db(void){
 	Database oBase;
 	bool bRet = oBase.open(TEST_DATABASE_FILE);
-	if (bRet){
-		bRet = oBase.close();
+	bRet = bRet && oBase.exec_sql(SQL_CREATE_DATASET);
+	bRet = bRet && oBase.exec_sql(SQL_CREATE_VARIABLE);
+	bRet = bRet && oBase.exec_sql(SQL_CREATE_INDIV);
+	bRet = bRet && oBase.exec_sql(SQL_CREATE_VALUE);
+	if (!bRet){
+		std::string err;
+		oBase.get_last_error(err);
+		cout << endl << "ERROR...!!!" << endl << err << endl;
 	}
+	bRet = oBase.close();
 }// mytest_db
 ////////////////////////////////
 void mytest_one() {
