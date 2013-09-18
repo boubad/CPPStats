@@ -55,6 +55,9 @@ const char *StatDataManager::SQL_CREATE_VARIABLE =
 				" CONSTRAINT uc_variable UNIQUE (datasetid, sigle),"
 				" CONSTRAINT fk_variable_dataset FOREIGN KEY (datasetid) REFERENCES dbdataset (datasetid) ON DELETE CASCADE"
 				" )";
+/////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////
 const char *StatDataManager::SQL_CREATE_INDIV =
 		"CREATE TABLE IF NOT EXISTS dbindiv("
 				" individ INTEGER PRIMARY KEY AUTOINCREMENT,"

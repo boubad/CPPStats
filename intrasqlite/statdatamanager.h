@@ -370,6 +370,9 @@ private:
 	static const char *SQL_INSERT_DATASET;
 	static const char *SQL_UPDATE_DATASET;
 	static const char *SQL_REMOVE_DATASET;
+	/////////////////////////////////////
+	static const char *SQL_FIND_DATASET_VARIABLES;
+	static const char *SQL_VARIABLE_BY_DATASET_AND_SIGLE;
 };
 ////////////////////////////////////
 } /* namespace intrasqlite */
