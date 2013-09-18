@@ -14,6 +14,12 @@
 #include <set>
 #include <map>
 #include <algorithm>
+//////////////////////
+#ifndef __MY_BOOST_INC__
+#define __MYBOOST_INC__
+#include <boost/algorithm/string.hpp>
+#include <boost/any.hpp>
+#endif // __MY_BOOST_UNC__
 /////////////////////////////////////
 namespace intra {
 //////////////////////////////////////
@@ -62,34 +68,370 @@ public:
 	inline int id(void) const {
 		return (this->m_id);
 	}
-	inline void id(int n){
+	inline void id(int n) {
 		this->m_id = n;
 	}
 	inline int version(void) const {
 		return (this->m_optlock);
 	}
-	inline void version(int n){
+	inline void version(int n) {
 		this->m_optlock = n;
 	}
 	inline const StringType & sigle(void) const {
 		return (this->m_sigle);
 	}
-	inline void sigle(const StringType &s){
+	inline void sigle(const StringType &s) {
 		this->m_sigle = s;
 	}
 	inline const StringType &name(void) const {
 		return (this->m_name);
 	}
-	inline void name(const StringType &s){
+	inline void name(const StringType &s) {
 		this->m_name = s;
 	}
 	inline const StringType & description(void) const {
 		return (this->m_desc);
 	}
-	inline void description(const StringType &s){
+	inline void description(const StringType &s) {
 		this->m_desc = s;
 	}
+	inline bool is_valid(void) const {
+		return (!this->m_sigle.empty());
+	}
+	inline bool is_updateable(void) const {
+		return ((this->m_id > 0) && (!this->m_sigle.empty()));
+	}
+	inline bool is_removeable(void) const {
+		return (this->m_id > 0);
+	}
 };
+////////////////////////////////////////
+template<class TSTRING = std::string>
+class StatVariable {
+public:
+	typedef TSTRING StringType;
+	typedef StatVariable<TSTRING> VariableType;
+private:
+	int m_id;
+	int m_datasetid;
+	int m_optlock;
+	int m_categvar;
+	StringType m_type;
+	StringType m_sigle;
+	StringType m_name;
+	StringType m_desc;
+public:
+	StatVariable() :
+			m_id(0), m_datasetid(0), m_optlock(1), m_categvar(0) {
+	}
+	StatVariable(const VariableType &other) :
+			m_id(other.m_id), m_datasetid(other.m_datasetid), m_optlock(
+					other.m_optlock), m_categvar(other.m_categvar), m_type(
+					other.m_type), m_sigle(other.m_sigle), m_name(other.m_name), m_desc(
+					other.m_desc) {
+	} // StatDataset
+	VariableType & operator=(const VariableType &other) {
+		if (this != &other) {
+			this->m_id = other.m_id;
+			this->m_datasetid = other.m_datasetid;
+			this->m_optlock = other.m_optlock;
+			this->m_categvar = other.m_categvar;
+			this->m_type = other.m_type;
+			this->m_sigle = other.m_sigle;
+			this->m_name = other.m_name;
+			this->m_desc = other.m_desc;
+		}
+		return (*this);
+	} // operator=
+	virtual ~StatVariable() {
+	}
+	bool operator==(const VariableType &other) const {
+		if ((this->m_id != 0) && (other.m_id != 0)) {
+			return (this->m_id == other.m_id);
+		}
+		return ((this->m_datasetid == other.m_datasetid)
+				&& (this->m_sigle == other.m_sigle));
+	} // operator==
+	bool operator<(const VariableType &other) const {
+		if (this->m_datasetid < other.m_datasetid) {
+			return (true);
+		} else if (m_datasetid > other.m_datasetid) {
+			return (false);
+		}
+		if (this->m_categvar > other.m_categvar) {
+			return (true);
+		} else if (this->m_categvar < other.m_categvar) {
+			return (false);
+		}
+		return (this->m_sigle < other.m_sigle);
+	} // operator==
+	  ////////////////////////////
+public:
+	inline int id(void) const {
+		return (this->m_id);
+	}
+	inline void id(int n) {
+		this->m_id = n;
+	}
+	inline int dataset_id(void) const {
+		return (this->m_datasetid);
+	}
+	inline void dataset_id(int n) {
+		this->m_datasetid = n;
+	}
+	inline int version(void) const {
+		return (this->m_optlock);
+	}
+	inline void version(int n) {
+		this->m_optlock = n;
+	}
+	inline bool is_categvar(void) const {
+		return (this->m_categvar != 0);
+	}
+	inline void is_categvar(bool b) {
+		this->m_categvar = (b) ? 1 : 0;
+	}
+	inline const StringType & var_type(void) const {
+		return (this->m_type);
+	}
+	inline void var_type(const StringType &s) {
+		this->m_type = boost::trim_copy(s);
+	}
+	inline const StringType & sigle(void) const {
+		return (this->m_sigle);
+	}
+	inline void sigle(const StringType &s) {
+		this->m_sigle = boost::trim_copy(s);
+	}
+	inline const StringType &name(void) const {
+		return (this->m_name);
+	}
+	inline void name(const StringType &s) {
+		this->m_name = boost::trim_copy(s);
+	}
+	inline const StringType & description(void) const {
+		return (this->m_desc);
+	}
+	inline void description(const StringType &s) {
+		this->m_desc = boost::trim_copy(s);
+	}
+	inline bool is_valid(void) const {
+		return ((this->m_datasetid > 0) && (!this->m_sigle.empty())
+				&& (!this->m_type.empty()));
+	}
+	inline bool is_updateable(void) const {
+		return ((this->m_id > 0) && (!this->m_sigle.empty())
+				&& (!this->m_type.empty()));
+	}
+	inline bool is_removeable(void) const {
+		return (this->m_id > 0);
+	}
+};
+/////////////////////////////////////
+template<class TSTRING = std::string>
+class StatIndiv {
+public:
+	typedef TSTRING StringType;
+	typedef StatIndiv<TSTRING> IndivType;
+private:
+	int m_id;
+	int m_datasetid;
+	int m_optlock;
+	StringType m_sigle;
+	StringType m_name;
+	StringType m_desc;
+public:
+	StatIndiv() :
+			m_id(0), m_datasetid(0), m_optlock(1) {
+	}
+	StatIndiv(const IndivType &other) :
+			m_id(other.m_id), m_datasetid(other.m_datasetid), m_optlock(
+					other.m_optlock), m_sigle(other.m_sigle), m_name(
+					other.m_name), m_desc(other.m_desc) {
+	} // StatIndiv
+	IndivType & operator=(const IndivType &other) {
+		if (this != &other) {
+			this->m_id = other.m_id;
+			this->m_datasetid = other.m_datasetid;
+			this->m_optlock = other.m_optlock;
+			this->m_sigle = other.m_sigle;
+			this->m_name = other.m_name;
+			this->m_desc = other.m_desc;
+		}
+		return (*this);
+	} // operator=
+	virtual ~StatIndiv() {
+	}
+	bool operator==(const IndivType &other) const {
+		if ((this->m_id != 0) && (other.m_id != 0)) {
+			return (this->m_id == other.m_id);
+		}
+		return ((this->m_datasetid == other.m_datasetid)
+				&& (this->m_sigle == other.m_sigle));
+	} // operator==
+	bool operator<(const IndivType &other) const {
+		if (this->m_datasetid < other.m_datasetid) {
+			return (true);
+		} else if (m_datasetid > other.m_datasetid) {
+			return (false);
+		}
+		return (this->m_sigle < other.m_sigle);
+	} // operator==
+	  ////////////////////////////
+public:
+	inline int id(void) const {
+		return (this->m_id);
+	}
+	inline void id(int n) {
+		this->m_id = n;
+	}
+	inline int dataset_id(void) const {
+		return (this->m_datasetid);
+	}
+	inline void dataset_id(int n) {
+		this->m_datasetid = n;
+	}
+	inline int version(void) const {
+		return (this->m_optlock);
+	}
+	inline void version(int n) {
+		this->m_optlock = n;
+	}
+	inline const StringType & sigle(void) const {
+		return (this->m_sigle);
+	}
+	inline void sigle(const StringType &s) {
+		this->m_sigle = boost::trim_copy(s);
+	}
+	inline const StringType &name(void) const {
+		return (this->m_name);
+	}
+	inline void name(const StringType &s) {
+		this->m_name = boost::trim_copy(s);
+	}
+	inline const StringType & description(void) const {
+		return (this->m_desc);
+	}
+	inline void description(const StringType &s) {
+		this->m_desc = boost::trim_copy(s);
+	}
+	inline bool is_valid(void) const {
+		return ((this->m_datasetid > 0) && (!this->m_sigle.empty()));
+	}
+	inline bool is_updateable(void) const {
+		return ((this->m_id > 0) && (!this->m_sigle.empty()));
+	}
+	inline bool is_removeable(void) const {
+		return (this->m_id > 0);
+	}
+};
+/////////////////////////////////////
+class StatValue {
+private:
+	int m_id;
+	int m_optlock;
+	int m_variableid;
+	int m_individ;
+	boost::any m_val;
+public:
+	StatValue() :
+			m_id(0), m_optlock(1), m_variableid(0), m_individ(0) {
+	}
+	StatValue(const StatValue &other) :
+			m_id(other.m_id), m_optlock(other.m_optlock), m_variableid(
+					other.m_variableid), m_individ(other.m_individ), m_val(
+					other.m_val) {
+	} // StatIndiv
+	StatValue & operator=(const StatValue &other) {
+		if (this != &other) {
+			this->m_id = other.m_id;
+			this->m_optlock = other.m_optlock;
+			this->m_variableid = other.m_variableid;
+			this->m_individ = other.m_individ;
+		}
+		return (*this);
+	} // operator=
+	virtual ~StatValue() {
+	}
+	bool operator==(const StatValue &other) const {
+		if ((this->m_id != 0) && (other.m_id != 0)) {
+			return (this->m_id == other.m_id);
+		}
+		return ((this->m_variableid == other.m_variableid)
+				&& (this->m_individ == other.m_individ));
+	} // operator==
+	bool operator<(const StatValue &other) const {
+		if (this->m_variableid < other.m_variableid) {
+			return (true);
+		} else if (m_variableid > other.m_variableid) {
+			return (false);
+		}
+		return (this->m_individ < other.m_individ);
+	} // operator==
+	  ////////////////////////////
+public:
+	inline int id(void) const {
+		return (this->m_id);
+	}
+	inline void id(int n) {
+		this->m_id = n;
+	}
+	inline int variable_id(void) const {
+		return (this->m_variableid);
+	}
+	inline void variable_id(int n) {
+		this->m_variableid = n;
+	}
+	inline int indiv_id(void) const {
+		return (this->m_individ);
+	}
+	inline void indiv_id(int n) {
+		this->m_individ = n;
+	}
+	inline int version(void) const {
+		return (this->m_optlock);
+	}
+	inline void version(int n) {
+		this->m_optlock = n;
+	}
+	inline const boost::any & value(void) const {
+		return (this->m_val);
+	}
+	inline void value(const boost::any &s) {
+		this->m_val = s;
+	}
+	inline void value(bool bVal) {
+		this->m_val = boost::any(bVal);
+	}
+	inline void value(int v) {
+		this->m_val = boost::any(v);
+	}
+	inline void value(float v) {
+		this->m_val = boost::any(v);
+	}
+	inline void value(double v) {
+		this->m_val = boost::any(v);
+	}
+	inline void value(const std::string &v) {
+		this->m_val = boost::any(v);
+	}
+	inline void value(const std::wstring &v) {
+		this->m_val = boost::any(v);
+	}
+	inline bool is_valid(void) const {
+		return ((this->m_variableid > 0) && (this->m_individ > 0));
+	}
+	inline bool is_empty(void) const {
+		return (this->m_val.empty());
+	}
+	inline bool is_updateable(void) const {
+		return (this->m_id > 0);
+	}
+	inline bool is_removeable(void) const {
+		return (this->m_id > 0);
+	}
+};
+/////////////////////////////////////
 /////////////////////////////////////
 } /* namespace intra */
 #endif /* STATDATASET_H_ */

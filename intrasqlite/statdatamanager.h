@@ -36,6 +36,9 @@ public:
 	template<class TSTRING>
 	bool remove_dataset(const intra::StatDataset<TSTRING> &cur) {
 		assert(this->is_valid());
+		if (!cur.is_removeable()){
+			return (false);
+		}
 		if (!this->begin_transaction()) {
 			return (false);
 		}
@@ -62,6 +65,9 @@ public:
 	template<class TSTRING>
 	bool update_dataset(const intra::StatDataset<TSTRING> &cur) {
 		assert(this->is_valid());
+		if (!cur.is_updateable()){
+			return (false);
+		}
 		if (!this->begin_transaction()) {
 			return (false);
 		}
@@ -100,6 +106,9 @@ public:
 	template<class TSTRING>
 	bool insert_dataset(const intra::StatDataset<TSTRING> &cur) {
 		assert(this->is_valid());
+		if (!cur.is_valid()){
+			return (false);
+		}
 		if (!this->begin_transaction()) {
 			return (false);
 		}
