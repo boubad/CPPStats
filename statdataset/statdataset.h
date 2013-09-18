@@ -430,6 +430,293 @@ public:
 	inline bool is_removeable(void) const {
 		return (this->m_id > 0);
 	}
+public:
+	bool bool_value(void) const {
+		bool oRet = false;
+		const boost::any &v = this->m_val;
+		if (!v.empty()) {
+			const std::type_info & t = v.type();
+			if (t == typeid(bool)) {
+				oRet = boost::any_cast<bool>(v);
+			} else if (t == typeid(short)) {
+				short x = boost::any_cast<short>(v);
+				oRet = (x != 0) ? true : false;
+			} else if (t == typeid(int)) {
+				int x = boost::any_cast<int>(v);
+				oRet = (x != 0) ? true : false;
+			} else if (t == typeid(float)) {
+				float x = boost::any_cast<float>(v);
+				oRet = (x != 0.0f) ? true : false;
+			} else if (t == typeid(double)) {
+				double x = boost::any_cast<double>(v);
+				oRet = (x != 0.0) ? true : false;
+			} else if (t == typeid(std::string)) {
+				std::string x = boost::any_cast<std::string>(v);
+				std::string xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					auto c = *(xx.begin());
+					oRet = (c == 't') || (c == '1') || (c == 'v') || (c == 'o');
+				} // not empty
+			} else if (t == typeid(std::wstring)) {
+				std::wstring x = boost::any_cast<std::wstring>(v);
+				std::wstring xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					auto c = *(xx.begin());
+					oRet = (c == L't') || (c == L'1') || (c == L'v')
+							|| (c == L'o');
+				} // not empty
+			}
+		} // not empty
+		return (oRet);
+	} // bool_value
+	short short_value(void) const {
+		short oRet = -1;
+		const boost::any &v = this->m_val;
+		if (!v.empty()) {
+			const std::type_info & t = v.type();
+			if (t == typeid(bool)) {
+				bool b = boost::any_cast<bool>(v);
+				oRet = (b) ? 1 : 0;
+			} else if (t == typeid(short)) {
+				short x = boost::any_cast<short>(v);
+				oRet = x;
+			} else if (t == typeid(int)) {
+				int x = boost::any_cast<int>(v);
+				oRet = (short) x;
+			} else if (t == typeid(float)) {
+				float x = boost::any_cast<float>(v);
+				oRet = (short) x;
+			} else if (t == typeid(double)) {
+				double x = boost::any_cast<double>(v);
+				oRet = (short) x;
+			} else if (t == typeid(std::string)) {
+				std::string x = boost::any_cast<std::string>(v);
+				std::string xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::stringstream in(xx);
+					in >> oRet;
+				} // not empty
+			} else if (t == typeid(std::wstring)) {
+				std::wstring x = boost::any_cast<std::wstring>(v);
+				std::wstring xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::wstringstream in(xx);
+					in >> oRet;
+				} // not empty
+			}
+		} // not empty
+		return (oRet);
+	} // short_value
+	int int_value(void) const {
+		int oRet = -1;
+		const boost::any &v = this->m_val;
+		if (!v.empty()) {
+			const std::type_info & t = v.type();
+			if (t == typeid(bool)) {
+				bool b = boost::any_cast<bool>(v);
+				oRet = (b) ? 1 : 0;
+			} else if (t == typeid(short)) {
+				short x = boost::any_cast<short>(v);
+				oRet = (int) x;
+			} else if (t == typeid(int)) {
+				int x = boost::any_cast<int>(v);
+				oRet = x;
+			} else if (t == typeid(float)) {
+				float x = boost::any_cast<float>(v);
+				oRet = (int) x;
+			} else if (t == typeid(double)) {
+				double x = boost::any_cast<double>(v);
+				oRet = (int) x;
+			} else if (t == typeid(std::string)) {
+				std::string x = boost::any_cast<std::string>(v);
+				std::string xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::stringstream in(xx);
+					in >> oRet;
+				} // not empty
+			} else if (t == typeid(std::wstring)) {
+				std::wstring x = boost::any_cast<std::wstring>(v);
+				std::wstring xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::wstringstream in(xx);
+					in >> oRet;
+				} // not empty
+			}
+		} // not empty
+		return (oRet);
+	} // int_value
+	float float_value(void) const {
+		float oRet = -1.0f;
+		const boost::any &v = this->m_val;
+		if (!v.empty()) {
+			const std::type_info & t = v.type();
+			if (t == typeid(bool)) {
+				bool b = boost::any_cast<bool>(v);
+				oRet = (b) ? 1.0f : 0.0f;
+			} else if (t == typeid(short)) {
+				short x = boost::any_cast<short>(v);
+				oRet = (float) x;
+			} else if (t == typeid(int)) {
+				int x = boost::any_cast<int>(v);
+				oRet = (float) x;
+			} else if (t == typeid(float)) {
+				float x = boost::any_cast<float>(v);
+				oRet = x;
+			} else if (t == typeid(double)) {
+				double x = boost::any_cast<double>(v);
+				oRet = (float) x;
+			} else if (t == typeid(std::string)) {
+				std::string x = boost::any_cast<std::string>(v);
+				std::string xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::stringstream in(xx);
+					in >> oRet;
+				} // not empty
+			} else if (t == typeid(std::wstring)) {
+				std::wstring x = boost::any_cast<std::wstring>(v);
+				std::wstring xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::wstringstream in(xx);
+					in >> oRet;
+				} // not empty
+			}
+		} // not empty
+		return (oRet);
+	} // float_value
+	double double_value(void) const {
+		double oRet = -1.0;
+		const boost::any &v = this->m_val;
+		if (!v.empty()) {
+			const std::type_info & t = v.type();
+			if (t == typeid(bool)) {
+				bool b = boost::any_cast<bool>(v);
+				oRet = (b) ? 1.0 : 0.0;
+			} else if (t == typeid(short)) {
+				short x = boost::any_cast<short>(v);
+				oRet = (double) x;
+			} else if (t == typeid(int)) {
+				int x = boost::any_cast<int>(v);
+				oRet = (double) x;
+			} else if (t == typeid(float)) {
+				float x = boost::any_cast<float>(v);
+				oRet = (double) x;
+			} else if (t == typeid(double)) {
+				double x = boost::any_cast<double>(v);
+				oRet = x;
+			} else if (t == typeid(std::string)) {
+				std::string x = boost::any_cast<std::string>(v);
+				std::string xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::stringstream in(xx);
+					in >> oRet;
+				} // not empty
+			} else if (t == typeid(std::wstring)) {
+				std::wstring x = boost::any_cast<std::wstring>(v);
+				std::wstring xx = boost::to_lower_copy(boost::trim_copy(x));
+				if (!xx.empty()) {
+					std::wstringstream in(xx);
+					in >> oRet;
+				} // not empty
+			}
+		} // not empty
+		return (oRet);
+	} // double_value
+	bool string_value(std::string &s) const {
+		bool bRet = false;
+		s.clear();
+		const boost::any &v = this->m_val;
+		if (!v.empty()) {
+			const std::type_info & t = v.type();
+			if (t == typeid(bool)) {
+				bool b = boost::any_cast<bool>(v);
+				s = (b) ? "True" : "False";
+				bRet = true;
+			} else if (t == typeid(short)) {
+				short x = boost::any_cast<short>(v);
+				std::stringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(int)) {
+				int x = boost::any_cast<int>(v);
+				std::stringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(float)) {
+				float x = boost::any_cast<float>(v);
+				std::stringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(double)) {
+				double x = boost::any_cast<double>(v);
+				std::stringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(std::string)) {
+				std::string x = boost::any_cast<std::string>(v);
+				s = x;
+				bRet = true;
+			} else if (t == typeid(std::wstring)) {
+				std::wstring x = boost::any_cast<std::wstring>(v);
+				std::string sx(x.length(), ' ');
+				std::copy(x.begin(), x.end(), sx.begin());
+				s = sx;
+				bRet = true;
+			}
+		} // not empty
+		return (bRet);
+	} // string_value
+	bool string_value(std::wstring &s) const {
+		bool bRet = false;
+		s.clear();
+		const boost::any &v = this->m_val;
+		if (!v.empty()) {
+			const std::type_info & t = v.type();
+			if (t == typeid(bool)) {
+				bool b = boost::any_cast<bool>(v);
+				s = (b) ? L"True" : L"False";
+				bRet = true;
+			} else if (t == typeid(short)) {
+				short x = boost::any_cast<short>(v);
+				std::wstringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(int)) {
+				int x = boost::any_cast<int>(v);
+				std::wstringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(float)) {
+				float x = boost::any_cast<float>(v);
+				std::wstringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(double)) {
+				double x = boost::any_cast<double>(v);
+				std::wstringstream os;
+				os << x;
+				s = os.str();
+				bRet = true;
+			} else if (t == typeid(std::wstring)) {
+				std::wstring x = boost::any_cast<std::wstring>(v);
+				s = x;
+				bRet = true;
+			} else if (t == typeid(std::string)) {
+				std::string x = boost::any_cast<std::string>(v);
+				std::wstring sx(x.length(), L' ');
+				std::copy(x.begin(), x.end(), sx.begin());
+				s = sx;
+				bRet = true;
+			}
+		} // not empty
+		return (bRet);
+	} // string_value
 };
 /////////////////////////////////////
 /////////////////////////////////////
