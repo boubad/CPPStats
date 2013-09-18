@@ -12,8 +12,6 @@
 #include <string>
 #include <sstream>
 ////////////////////////////////////////
-#include <boost/algorithm/string.hpp>
-///////////////////////////////////////
 #include "../sqlite/database.h"
 #include "../sqlite/statement.h"
 //////////////////////////////////
@@ -51,8 +49,7 @@ public:
 			this->rollback_transaction();
 			return (false);
 		}
-		bool bDone = false;
-		if (!stmt.exec(bDone)) {
+		if (!stmt.exec()) {
 			this->rollback_transaction();
 			return (false);
 		}
@@ -90,8 +87,7 @@ public:
 			this->rollback_transaction();
 			return (false);
 		}
-		bool bDone = false;
-		if (!stmt.exec(bDone)) {
+		if (!stmt.exec()) {
 			this->rollback_transaction();
 			return (false);
 		}
@@ -125,8 +121,7 @@ public:
 			this->rollback_transaction();
 			return (false);
 		}
-		bool bDone = false;
-		if (!stmt.exec(bDone)) {
+		if (!stmt.exec()) {
 			this->rollback_transaction();
 			return (false);
 		}
@@ -136,9 +131,9 @@ public:
 		}
 		return (true);
 	} // insert_dataset
-	template<class TSTRING, class SSTREAM>
+	template<class TSTRING>
 	bool get_dataset_by_sigle(const TSTRING &xSigle,
-			intra::StatDataset<TSTRING> &cur, SSTREAM &instream) {
+			intra::StatDataset<TSTRING> &cur) {
 		assert(this->is_valid());
 		sqlite::Database *pBase = this->m_database.get();
 		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_BY_SIGLE);
@@ -149,48 +144,59 @@ public:
 		if (!stmt.set_parameter(1, sx.c_str())) {
 			return (false);
 		}
-		bool bDone = false;
-		if (!stmt.exec(bDone)) {
+		if (!stmt.exec()) {
+			return (false);
+		}
+		if (!stmt.has_values()) {
 			return (false);
 		}
 		int n = stmt.cols();
 		assert(n >= 5);
 		{
-			TSTRING s;
-			stmt.col_value(0, s);
-			int nId = 0;
-			SSTREAM in(s);
-			in >> nId;
-			cur.id(nId);
+			sqlite::DbValue v;
+			if (stmt.col_value(0, v)) {
+				int nId = v.int_value();
+				cur.id(nId);
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(1, s);
-			int nId = 0;
-			SSTREAM in(s);
-			in >> nId;
-			cur.version(nId);
+			sqlite::DbValue v;
+			if (stmt.col_value(1, v)) {
+				int nVersion = v.int_value();
+				cur.version(nVersion);
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(2, s);
-			cur.sigle(s);
+			sqlite::DbValue v;
+			if (stmt.col_value(2, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.sigle(s);
+				}
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(3, s);
-			cur.name(s);
+			sqlite::DbValue v;
+			if (stmt.col_value(3, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.name(s);
+				}
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(4, s);
-			cur.description(s);
+			sqlite::DbValue v;
+			if (stmt.col_value(4, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.description(s);
+				}
+			}
 		}
 		return (true);
 	} // get_dataset_by_sigle
-	template<class TSTRING, class SSTREAM>
-	bool get_dataset_by_id(int xId, intra::StatDataset<TSTRING> &cur,
-			SSTREAM &instream) {
+	template<class TSTRING>
+	bool get_dataset_by_id(int xId, intra::StatDataset<TSTRING> &cur) {
 		assert(this->is_valid());
 		sqlite::Database *pBase = this->m_database.get();
 		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_BY_ID);
@@ -200,49 +206,60 @@ public:
 		if (!stmt.set_parameter(1, xId)) {
 			return (false);
 		}
-		bool bDone = false;
-		if (!stmt.exec(bDone)) {
+		if (!stmt.exec()) {
+			return (false);
+		}
+		if (!stmt.has_values()) {
 			return (false);
 		}
 		int n = stmt.cols();
 		assert(n >= 5);
 		{
-			TSTRING s;
-			stmt.col_value(0, s);
-			int nId = 0;
-			SSTREAM in(s);
-			in >> nId;
-			cur.id(nId);
+			sqlite::DbValue v;
+			if (stmt.col_value(0, v)) {
+				int nId = v.int_value();
+				cur.id(nId);
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(1, s);
-			int nId = 0;
-			SSTREAM in(s);
-			in >> nId;
-			cur.version(nId);
+			sqlite::DbValue v;
+			if (stmt.col_value(1, v)) {
+				int nVersion = v.int_value();
+				cur.version(nVersion);
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(2, s);
-			cur.sigle(s);
+			sqlite::DbValue v;
+			if (stmt.col_value(2, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.sigle(s);
+				}
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(3, s);
-			cur.name(s);
+			sqlite::DbValue v;
+			if (stmt.col_value(3, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.name(s);
+				}
+			}
 		}
 		{
-			TSTRING s;
-			stmt.col_value(4, s);
-			cur.description(s);
+			sqlite::DbValue v;
+			if (stmt.col_value(4, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.description(s);
+				}
+			}
 		}
 		return (true);
 	} // get_dataset_by_id
-	template<class TSTRING, class ALLOCVEC, class SSTREAM>
+	template<class TSTRING, class ALLOCVEC>
 	bool get_all_datasets(
-			std::vector<intra::StatDataset<TSTRING>, ALLOCVEC> &oVec,
-			SSTREAM &inStream) {
+			std::vector<intra::StatDataset<TSTRING>, ALLOCVEC> &oVec) {
 		assert(this->is_valid());
 		oVec.clear();
 		sqlite::Database *pBase = this->m_database.get();
@@ -250,54 +267,57 @@ public:
 		if (!stmt.is_valid()) {
 			return (false);
 		}
-		bool bDone = false;
-		if (!stmt.exec(bDone)) {
+		if (!stmt.exec()) {
 			return (false);
 		}
-		int n = stmt.cols();
-		if (n < 1) {
-			return (true);
-		}
-		do {
+		while (stmt.has_values()) {
 			intra::StatDataset<TSTRING> cur;
-			int n = stmt.cols();
-			assert(n >= 5);
 			{
-				TSTRING s;
-				stmt.col_value(0, s);
-				int nId = 0;
-				SSTREAM in(s);
-				in >> nId;
-				cur.id(nId);
+				sqlite::DbValue v;
+				if (stmt.col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
 			}
 			{
-				TSTRING s;
-				stmt.col_value(1, s);
-				int nId = 0;
-				SSTREAM in(s);
-				in >> nId;
-				cur.version(nId);
+				sqlite::DbValue v;
+				if (stmt.col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
 			}
 			{
-				TSTRING s;
-				stmt.col_value(2, s);
-				cur.sigle(s);
+				sqlite::DbValue v;
+				if (stmt.col_value(2, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
 			}
 			{
-				TSTRING s;
-				stmt.col_value(3, s);
-				cur.name(s);
+				sqlite::DbValue v;
+				if (stmt.col_value(3, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
 			}
 			{
-				TSTRING s;
-				stmt.col_value(4, s);
-				cur.description(s);
+				sqlite::DbValue v;
+				if (stmt.col_value(4, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
 			}
 			oVec.push_back(cur);
-			if (!stmt.next(bDone)){
+			if (!stmt.next()){
 				break;
 			}
-		} while (!bDone);
+		} // values
 		return (true);
 	} // get_all_datasets
 public:

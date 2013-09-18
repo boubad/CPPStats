@@ -26,8 +26,7 @@ void mytest_db(void){
 	}
 	std::string sigle("TestSigle");
 	StatDataset<std::string> oSet;
-	std::stringstream instream;
-	bRet = oMan.get_dataset_by_sigle(sigle,oSet,instream);
+	bRet = oMan.get_dataset_by_sigle(sigle,oSet);
 	if ((!bRet) || (oSet.id() == 0)){
 		oSet.sigle(sigle);
 		oSet.name("Name of test database");
@@ -36,7 +35,7 @@ void mytest_db(void){
 		if (!bRet){
 			return;
 		}
-		bRet = oMan.get_dataset_by_sigle(sigle,oSet,instream);
+		bRet = oMan.get_dataset_by_sigle(sigle,oSet);
 		if (!bRet){
 			return;
 		}
@@ -45,15 +44,16 @@ void mytest_db(void){
 	if (nId == 0){
 		return;
 	}
+	bRet = oMan.get_dataset_by_id(nId,oSet);
 	std::vector<StatDataset<std::string>  > oVec;
-	bRet = oMan.get_all_datasets(oVec,instream);
+	bRet = oMan.get_all_datasets(oVec);
 	oSet.name("Génie civil");
 	bRet = oMan.update_dataset(oSet);
 	if (!bRet){
 		return;
 	}
 	bRet = oMan.remove_dataset(oSet);
-	bRet = oMan.get_all_datasets(oVec,instream);
+	bRet = oMan.get_all_datasets(oVec);
 	bRet = oMan.close();
 }// mytest_db
 ////////////////////////////////

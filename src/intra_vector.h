@@ -31,7 +31,12 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+//////////////////////////////
+#ifndef __MY_BOOST_INC__
+#define __MYBOOST_INC__
+#include <boost/algorithm/string.hpp>
 #include <boost/any.hpp>
+#endif // __MY_BOOST_UNC__
 /////////////////////////////////
 namespace intra {
 ///////////////////////////////////

@@ -104,8 +104,7 @@ bool StatDataManager::begin_transaction(void) {
 	if (!stmt.is_valid()) {
 		return (false);
 	}
-	bool bDone = false;
-	if (stmt.exec(bDone)) {
+	if (stmt.exec()) {
 		this->m_intransaction = true;
 		return (true);
 	}
@@ -121,8 +120,7 @@ bool StatDataManager::commit_transaction(void) {
 	if (!stmt.is_valid()) {
 		return (false);
 	}
-	bool bDone = false;
-	if (stmt.exec(bDone)) {
+	if (stmt.exec()) {
 		this->m_intransaction = false;
 		return (true);
 	}
@@ -138,8 +136,7 @@ bool StatDataManager::rollback_transaction(void) {
 	if (!stmt.is_valid()) {
 		return (false);
 	}
-	bool bDone = false;
-	if (stmt.exec(bDone)) {
+	if (stmt.exec()) {
 		this->m_intransaction = false;
 		return (true);
 	}
