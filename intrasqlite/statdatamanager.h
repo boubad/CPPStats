@@ -33,10 +33,13 @@ public:
 	bool commit_transaction(void);
 	bool rollback_transaction(void);
 public:
-	template<class TSTRING>
-	bool remove_dataset(const intra::StatDataset<TSTRING> &cur) {
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
+			class ALLOCINDIVPAIR>
+	bool remove_dataset(
+			const intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+					ALLOCINDIVPAIR> &cur) {
 		assert(this->is_valid());
-		if (!cur.is_removeable()){
+		if (!cur.is_removeable()) {
 			return (false);
 		}
 		if (!this->begin_transaction()) {
@@ -62,10 +65,13 @@ public:
 		}
 		return (true);
 	} // update_dataset
-	template<class TSTRING>
-	bool update_dataset(const intra::StatDataset<TSTRING> &cur) {
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
+			class ALLOCINDIVPAIR>
+	bool update_dataset(
+			const intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+					ALLOCINDIVPAIR> &cur) {
 		assert(this->is_valid());
-		if (!cur.is_updateable()){
+		if (!cur.is_updateable()) {
 			return (false);
 		}
 		if (!this->begin_transaction()) {
@@ -103,10 +109,13 @@ public:
 		}
 		return (true);
 	} // update_dataset
-	template<class TSTRING>
-	bool insert_dataset(const intra::StatDataset<TSTRING> &cur) {
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
+			class ALLOCINDIVPAIR>
+	bool insert_dataset(
+			const intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+					ALLOCINDIVPAIR> &cur) {
 		assert(this->is_valid());
-		if (!cur.is_valid()){
+		if (!cur.is_valid()) {
 			return (false);
 		}
 		if (!this->begin_transaction()) {
@@ -140,9 +149,11 @@ public:
 		}
 		return (true);
 	} // insert_dataset
-	template<class TSTRING>
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
+			class ALLOCINDIVPAIR>
 	bool get_dataset_by_sigle(const TSTRING &xSigle,
-			intra::StatDataset<TSTRING> &cur) {
+			intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+					ALLOCINDIVPAIR> &cur) {
 		assert(this->is_valid());
 		sqlite::Database *pBase = this->m_database.get();
 		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_BY_SIGLE);
@@ -204,8 +215,11 @@ public:
 		}
 		return (true);
 	} // get_dataset_by_sigle
-	template<class TSTRING>
-	bool get_dataset_by_id(int xId, intra::StatDataset<TSTRING> &cur) {
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
+			class ALLOCINDIVPAIR>
+	bool get_dataset_by_id(int xId,
+			intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+					ALLOCINDIVPAIR> &cur) {
 		assert(this->is_valid());
 		sqlite::Database *pBase = this->m_database.get();
 		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_BY_ID);
@@ -266,9 +280,12 @@ public:
 		}
 		return (true);
 	} // get_dataset_by_id
-	template<class TSTRING, class ALLOCVEC>
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
+			class ALLOCINDIVPAIR, class ALLOCVEC>
 	bool get_all_datasets(
-			std::vector<intra::StatDataset<TSTRING>, ALLOCVEC> &oVec) {
+			std::vector<
+					intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+							ALLOCINDIVPAIR>, ALLOCVEC> &oVec) {
 		assert(this->is_valid());
 		oVec.clear();
 		sqlite::Database *pBase = this->m_database.get();
@@ -323,7 +340,7 @@ public:
 				}
 			}
 			oVec.push_back(cur);
-			if (!stmt.next()){
+			if (!stmt.next()) {
 				break;
 			}
 		} // values

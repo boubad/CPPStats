@@ -140,6 +140,9 @@ public:
 		return *this;
 	}
 public:
+	inline const boost::any & value(void) const{
+		return (this->m_val);
+	}
 	inline bool is_valid(void) const {
 		return (!this->m_val.empty());
 	}
