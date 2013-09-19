@@ -34,6 +34,9 @@ public:
 	StatValue() :
 			m_id(0), m_optlock(1), m_variableid(0), m_individ(0) {
 	}
+	StatValue(const boost::any &v) :
+			m_id(0), m_optlock(1), m_variableid(0), m_individ(0), m_val(v) {
+	}
 	StatValue(const StatValue &other) :
 			m_id(other.m_id), m_optlock(other.m_optlock), m_variableid(
 					other.m_variableid), m_individ(other.m_individ), m_val(
@@ -515,12 +518,12 @@ public:
 };
 /////////////////////////////////////
 template<class TSTRING = std::string, class ALLOCANYPAIR = std::allocator<
-		std::pair<int, boost::any> > >
+		std::pair<int, StatValue> > >
 class StatVariable {
 public:
 	typedef TSTRING StringType;
 	typedef StatVariable<TSTRING> VariableType;
-	typedef std::map<int, boost::any, std::less<int>, ALLOCANYPAIR> ValuesMapType;
+	typedef std::map<int, StatValue, std::less<int>, ALLOCANYPAIR> ValuesMapType;
 private:
 	int m_id;
 	int m_datasetid;
@@ -583,7 +586,7 @@ public:
 		auto oMap = this->m_valuesmap;
 		return (oMap.find(indivId) != oMap.end());
 	}	  // has_indiv_value
-	inline bool get_indiv_value(int indivId, boost::any &v) const {
+	inline bool get_indiv_value(int indivId, StatValue &v) const {
 		auto oMap = this->m_valuesmap;
 		auto it = oMap.find(indivId);
 		if (it != oMap.end()) {
@@ -592,7 +595,7 @@ public:
 		}
 		return (false);
 	}	  // get_indiv_value
-	inline void set_indiv_value(int indivId, const boost::any &v) {
+	inline void set_indiv_value(int indivId, const StatValue &v) {
 		boost::any aa(v);
 		(this->m_valuesmap)[indivId] = aa;
 	}	  // get_indiv_value
@@ -603,15 +606,35 @@ public:
 		return (this->m_valuesmap);
 	}
 	template<class ALLOCINT>
-	void get_indivs_ids(std::set<int, std::less<int>, ALLOCINT> &oSet) const {
+	void get_valid_indivs_ids(
+			std::set<int, std::less<int>, ALLOCINT> &oSet) const {
 		oSet.clear();
-		auto oMap = this->m_valuesmap;
+		const ValuesMapType oMap = this->m_valuesmap;
 		auto iend = oMap.end();
 		for (auto it = oMap.begin(); it != iend; ++it) {
-			oSet.insert((*it).first);
+			const StatValue &v = (*it).second;
+			if (!v.is_empty()) {
+				oSet.insert((*it).first);
+			}
 		}	  // it
 	}	  // get_indivs_ids
-		  //
+	template<class CONTAINER>
+	void get_indexes_values(const CONTAINER &oIndexes,
+			ValuesMapType &oVals) const {
+		oVals.clear();
+		const ValuesMapType &oMap = this->m_valuesmap;
+		auto iend = oIndexes.end();
+		auto jend = oMap.end();
+		for (auto it = oIndexes.begin(); it != iend; ++it) {
+			int ii = *it;
+			if (oMap.find(ii) != jend) {
+				StatValue v = oMap[ii];
+				oVals[ii] = v;
+			}
+		}	  // it
+	}	  // get_values
+
+	//
 	inline int id(void) const {
 		return (this->m_id);
 	}
@@ -740,7 +763,70 @@ public:
 	inline IndivsMapType & indivs(void) {
 		return (this->m_indivs);
 	}
-	////////////////////////////
+	const VariableType *find_variable_by_sigle(const TSTRING &s) const {
+		auto oMap = this->m_variables;
+		for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+			const VariableType &v = (*it).second;
+			TSTRING ss = v.sigle();
+			if (ss == s) {
+				return (&v);
+			}
+		}	  // it
+		return (nullptr);
+	}	  // find_variable_by_sigle
+	const IndivType *find_indiv_by_sigle(const TSTRING &s) const {
+			auto oMap = this->m_indivs;
+			for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+				const IndivType &v = (*it).second;
+				TSTRING ss = v.sigle();
+				if (ss == s) {
+					return (&v);
+				}
+			}	  // it
+			return (nullptr);
+		}	  // find_indiv_by_sigle
+	template<class CONTAINER, class ALLOCINT>
+	void get_common_indexes(const CONTAINER &cols,
+			std::set<int, std::less<int>, ALLOCINT> &oRes) const {
+		bool bFirst = true;
+		auto iend = cols.end();
+		const VariablesMapType &oVars = this->m_variables;
+		auto jend = oVars.end();
+		for (auto it = cols.begin(); it != iend; ++it) {
+			int icol = *it;
+			auto jt = oVars.find(icol);
+			if (jt != jend) {
+				const VariableType &vcol = (*jt).second;
+				std::set<int, std::less<int>, ALLOCINT> oCurSet;
+				vcol.get_valid_indivs_ids(oCurSet);
+				if (bFirst) {
+					bFirst = false;
+					oRes = oCurSet;
+				} else {
+					std::set<int, std::less<int>, ALLOCINT> oDelSet;
+					auto kend = oRes.end();
+					auto lt = oCurSet.end();
+					for (auto kt = oRes.begin(); kt != kend; ++kt) {
+						int ii = *kt;
+						if (oCurSet.find(ii) == lt) {
+							oDelSet.insert(ii);
+						}
+					}	  // kt
+					for (auto mt = oDelSet.begin(); mt != oDelSet.end(); ++mt) {
+						int jj = *mt;
+						auto dt = oRes.find(jj);
+						if (dt != oRes.find()) {
+							oRes.erase(dt);
+						}
+					}	  // mt
+					if (oRes.empty()) {
+						return;
+					}
+				}
+			}	  // ok vars
+		}	  // it
+	}	  // get_common_indexes
+		  ////////////////////////////
 public:
 	inline int id(void) const {
 		return (this->m_id);

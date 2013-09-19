@@ -13,7 +13,7 @@
 /////////////////////////////////
 namespace intra {
 ////////////////////////////////////
-template<class TSTRING = std::wstring, typename CHARTYPE = wchar_t,
+template<class TSTRING = std::string, typename CHARTYPE = char,
 		class ALLOCTSTRING = std::allocator<TSTRING>,
 		class ALLOCVECTSTRING = std::allocator<
 				std::vector<TSTRING, ALLOCTSTRING> >,
@@ -118,8 +118,7 @@ public:
 		if (vx.empty()) {
 			return (false);
 		}
-		auto t = vx.type();
-		if (t == typeid(double)) {
+		if (vx.type() == typeid(double)) {
 			v = boost::any_cast<double>(vx);
 			return (true);
 		}

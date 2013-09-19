@@ -33,6 +33,773 @@ public:
 	bool commit_transaction(void);
 	bool rollback_transaction(void);
 public:
+	void convert_value(const intra::StatValue &s, const std::string &vartype,
+			boost::any &v) {
+		std::string sx = boost::to_lower_copy(boost::trim_copy(vartype));
+		if (sx == "bool") {
+			v = boost::any(s.bool_value());
+		} else if (sx == "short") {
+			v = boost::any(s.short_value());
+		} else if (sx == "integer") {
+			v = boost::any(s.int_value());
+		} else if (sx == "float") {
+			v = boost::any(s.float_value());
+		} else if (sx == "double") {
+			v = boost::any(s.double_value());
+		} else if (sx == "string") {
+			std::string ss;
+			s.string_value(ss);
+			v = boost::any(ss);
+		}
+	} //convert_value
+	template<class ALLOCVAL>
+	bool remove_values(const std::vector<intra::StatValue, ALLOCVAL> &oVec) {
+		assert(this->is_valid());
+		if (!this->begin_transaction()) {
+			return (false);
+		}
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_REMOVE_VALUE);
+		if (!stmt.is_valid()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		for (auto it = oVec.begin(); it != oVec.end(); ++it) {
+			const intra::StatValue &cur = *it;
+			int nId = cur.id();
+			if (nId != 0) {
+				stmt.reset();
+				stmt.set_parameter(1, nId);
+				if (!stmt.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			}
+		} // it
+		if (!this->commit_transaction()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		return (true);
+	} // remove_values
+	template<class ALLOCVAL>
+	bool maintains_values(const std::vector<intra::StatValue, ALLOCVAL> &oVec) {
+		assert(this->is_valid());
+		if (!this->begin_transaction()) {
+			return (false);
+		}
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmtInsert(pBase, SQL_INSERT_VALUE);
+		sqlite::Statement stmtUpdate(pBase, SQL_UPDATE_VALUE);
+		if ((!stmtUpdate.is_valid()) || (!stmtInsert.is_valid())) {
+			this->rollback_transaction();
+			return (false);
+		}
+		for (auto it = oVec.begin(); it != oVec.end(); ++it) {
+			const intra::StatValue &cur = *it;
+			int nId = cur.id();
+			int nVarId = cur.variable_id();
+			int nIndivId = cur.indiv_id();
+			std::string sval;
+			cur.string_value(sval);
+			if (cur.is_updateable()) {
+				stmtUpdate.reset();
+				stmtUpdate.set_parameter(1, sval);
+				stmtUpdate.set_parameter(2, nId);
+				if (!stmtUpdate.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			} else if (cur.is_valid()) {
+				stmtInsert.reset();
+				stmtInsert.set_parameter(1, nVarId);
+				stmtInsert.set_parameter(2, nIndivId);
+				stmtInsert.set_parameter(3, sval);
+				if (!stmtInsert.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			}
+		} // it
+		if (!this->commit_transaction()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		return (true);
+	} // maintains_values
+	bool get_value_by_variable_indiv(int nVarId, int nIndivId,
+			intra::StatValue &cur) {
+		assert(this->is_valid());
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_VALUES_BY_VARIABLE_INDIV);
+		sqlite::Statement stmtVarType(pBase, SQL_FIND_VARIABLE_TYPE);
+		if ((!stmt.is_valid()) || (!stmtVarType.is_valid())) {
+			return (false);
+		}
+		stmt.set_parameter(1, nVarId);
+		stmt.set_parameter(2, nIndivId);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		if (!stmt.has_values()) {
+			return (false);
+		}
+		std::string vartype;
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(0, v)) {
+				int nId = v.int_value();
+				cur.id(nId);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(1, v)) {
+				int nVersion = v.int_value();
+				cur.version(nVersion);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(2, v)) {
+				int nx = v.int_value();
+				cur.variable_id(nx);
+				stmtVarType.set_parameter(1, nx);
+				if (!stmtVarType.exec()) {
+					return (false);
+				}
+				if (!stmtVarType.has_values()) {
+					return (false);
+				}
+				sqlite::DbValue vv;
+				stmtVarType.col_value(0, vv);
+				vv.string_value(vartype);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(3, v)) {
+				int nx = v.int_value();
+				cur.indiv_id(nx);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(4, v)) {
+				boost::any vx = v.value();
+				intra::StatValue x(vx);
+				boost::any vy;
+				this->convert_value(x, vartype, vy);
+				cur.value(vy);
+			}
+		}
+		return (true);
+	} // get_dataset_indivs
+	template<class ALLOCVEC>
+	bool get_dataset_values(int nDatasetId,
+			std::vector<intra::StatValue, ALLOCVEC> &oVec) {
+		assert(this->is_valid());
+		oVec.clear();
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_VALUES);
+		sqlite::Statement stmtVarType(pBase, SQL_FIND_VARIABLE_TYPE);
+		std::map<int, std::string> oMap;
+		if ((!stmt.is_valid()) || (!stmtVarType.is_valid())) {
+			return (false);
+		}
+		if (!stmt.is_valid()) {
+			return (false);
+		}
+		stmt.set_parameter(1, nDatasetId);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		while (stmt.has_values()) {
+			intra::StatValue cur;
+			std::string vartype;
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(2, v)) {
+					int nx = v.int_value();
+					cur.variable_id(nx);
+					if (oMap.find(nx) != oMap.end()) {
+						vartype = oMap[nx];
+					} else {
+						stmtVarType.set_parameter(1, nx);
+						if (!stmtVarType.exec()) {
+							return (false);
+						}
+						if (!stmtVarType.has_values()) {
+							return (false);
+						}
+						sqlite::DbValue vv;
+						stmtVarType.col_value(0, vv);
+						vv.string_value(vartype);
+						if (!vartype.empty()) {
+							oMap[nx] = vartype;
+						}
+					}
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(3, v)) {
+					int nx = v.int_value();
+					cur.indiv_id(nx);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(4, v)) {
+					boost::any vx = v.value();
+					intra::StatValue x(vx);
+					boost::any vy;
+					this->convert_value(x, vartype, vy);
+					cur.value(vy);
+				}
+			}
+			oVec.push_back(cur);
+			if (!stmt.next()) {
+				break;
+			}
+		} // values
+		return (true);
+	} // get_dataset_indivs
+	bool get_dataset_values_count(int nId, int &nCount) {
+		assert(this->is_valid());
+		nCount = 0;
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_VALUES_COUNT);
+		if (!stmt.is_valid()) {
+			return false;
+		}
+		stmt.set_parameter(1, nId);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		if (!stmt.has_values()) {
+			return (false);
+		}
+		sqlite::DbValue v;
+		if (stmt.col_value(0, v)) {
+			nCount = v.int_value();
+		}
+		return (true);
+	} // get_dataset_values_count
+	  //
+	template<class TSTRING, class ALLOCIND>
+	bool remove_indivs(
+			const std::vector<intra::StatIndiv<TSTRING>, ALLOCIND> &oVec) {
+		assert(this->is_valid());
+		if (!this->begin_transaction()) {
+			return (false);
+		}
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_REMOVE_INDIV);
+		if (!stmt.is_valid()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		for (auto it = oVec.begin(); it != oVec.end(); ++it) {
+			const intra::StatIndiv<TSTRING> &cur = *it;
+			int nId = cur.id();
+			if (nId != 0) {
+				stmt.reset();
+				stmt.set_parameter(1, nId);
+				if (!stmt.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			}
+		} // it
+		if (!this->commit_transaction()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		return (true);
+	} // remove_indivs
+	template<class TSTRING, class ALLOCIND>
+	bool maintains_indivs(
+			const std::vector<intra::StatIndiv<TSTRING>, ALLOCIND> &oVec) {
+		assert(this->is_valid());
+		if (!this->begin_transaction()) {
+			return (false);
+		}
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmtInsert(pBase, SQL_INSERT_INDIV);
+		sqlite::Statement stmtUpdate(pBase, SQL_UPDATE_INDIV);
+		if ((!stmtUpdate.is_valid()) || (!stmtInsert.is_valid())) {
+			this->rollback_transaction();
+			return (false);
+		}
+		for (auto it = oVec.begin(); it != oVec.end(); ++it) {
+			const intra::StatIndiv<TSTRING> &cur = *it;
+			int nId = cur.id();
+			int nDatasetId = cur.dataset_id();
+			TSTRING sigle = cur.sigle();
+			if (cur.is_updateable()) {
+				stmtUpdate.reset();
+				stmtUpdate.set_parameter(1, sigle);
+				stmtUpdate.set_parameter(2, cur.name());
+				stmtUpdate.set_parameter(3, cur.description());
+				stmtUpdate.set_parameter(4, nId);
+				if (!stmtUpdate.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			} else if (cur.is_valid()) {
+				stmtInsert.reset();
+				stmtInsert.set_parameter(1, nDatasetId);
+				stmtInsert.set_parameter(2, sigle);
+				stmtInsert.set_parameter(3, cur.name());
+				stmtInsert.set_parameter(4, cur.description());
+				if (!stmtInsert.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			}
+		} // it
+		if (!this->commit_transaction()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		return (true);
+	} // maintains_indivs
+	template<class TSTRING>
+	bool get_indiv_by_dataset_sigle(int nDatasetId, const TSTRING &xSigle,
+			intra::StatIndiv<TSTRING> &cur) {
+		assert(this->is_valid());
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_INDIV_BY_DATASET_AND_SIGLE);
+		if (!stmt.is_valid()) {
+			return (false);
+		}
+		TSTRING sigle =  boost::to_upper_copy(boost::trim_copy(xSigle));
+		stmt.set_parameter(1, nDatasetId);
+		stmt.set_parameter(2, sigle);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		if (!stmt.has_values()) {
+			return (false);
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(0, v)) {
+				int nId = v.int_value();
+				cur.id(nId);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(1, v)) {
+				int nVersion = v.int_value();
+				cur.version(nVersion);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(2, v)) {
+				int nx = v.int_value();
+				cur.dataset_id(nx);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(3, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.sigle(s);
+				}
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(4, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.name(s);
+				}
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(5, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.description(s);
+				}
+			}
+		}
+		return (true);
+	} // get_indiv_by_dataset_sigle
+	template<class TSTRING, class ALLOCVEC>
+	bool get_dataset_indivs(int nDatasetId,
+			std::vector<intra::StatIndiv<TSTRING>, ALLOCVEC> &oVec) {
+		assert(this->is_valid());
+		oVec.clear();
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_INDIVS);
+		if (!stmt.is_valid()) {
+			return (false);
+		}
+		stmt.set_parameter(1, nDatasetId);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		while (stmt.has_values()) {
+			intra::StatIndiv<TSTRING> cur;
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(2, v)) {
+					int nx = v.int_value();
+					cur.dataset_id(nx);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(3, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(4, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(5, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+			oVec.push_back(cur);
+			if (!stmt.next()) {
+				break;
+			}
+		} // values
+		return (true);
+	} // get_dataset_indivs
+	bool get_dataset_indivs_count(int nId, int &nCount) {
+		assert(this->is_valid());
+		nCount = 0;
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_INDIVS_COUNT);
+		if (!stmt.is_valid()) {
+			return false;
+		}
+		stmt.set_parameter(1, nId);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		if (!stmt.has_values()) {
+			return (false);
+		}
+		sqlite::DbValue v;
+		if (stmt.col_value(0, v)) {
+			nCount = v.int_value();
+		}
+		return (true);
+	} // get_dataset_indivs_count
+	  //
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVAR>
+	bool remove_variables(
+			const std::vector<intra::StatVariable<TSTRING, ALLOCANYPAIR>,
+					ALLOCVAR> &oVec) {
+		assert(this->is_valid());
+		if (!this->begin_transaction()) {
+			return (false);
+		}
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_REMOVE_VARIABLE);
+		if (!stmt.is_valid()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		for (auto it = oVec.begin(); it != oVec.end(); ++it) {
+			const intra::StatVariable<TSTRING, ALLOCANYPAIR> &cur = *it;
+			int nId = cur.id();
+			if (nId != 0) {
+				stmt.reset();
+				stmt.set_parameter(1, nId);
+				if (!stmt.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			}
+		} // it
+		if (!this->commit_transaction()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		return (true);
+	} // remove_variables
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVAR>
+	bool maintains_variables(
+			const std::vector<intra::StatVariable<TSTRING, ALLOCANYPAIR>,
+					ALLOCVAR> &oVec) {
+		assert(this->is_valid());
+		if (!this->begin_transaction()) {
+			return (false);
+		}
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmtInsert(pBase, SQL_INSERT_VARIABLE);
+		sqlite::Statement stmtUpdate(pBase, SQL_UPDATE_VARIABLE);
+		if ((!stmtUpdate.is_valid()) || (!stmtInsert.is_valid())) {
+			this->rollback_transaction();
+			return (false);
+		}
+		for (auto it = oVec.begin(); it != oVec.end(); ++it) {
+			const intra::StatVariable<TSTRING, ALLOCANYPAIR> &cur = *it;
+			int nId = cur.id();
+			int nDatasetId = cur.dataset_id();
+			TSTRING sigle = cur.sigle();
+			int nz = (cur.is_categvar()) ? 1 : 0;
+			if (cur.is_updateable()) {
+				stmtUpdate.reset();
+				stmtUpdate.set_parameter(1, sigle);
+				stmtUpdate.set_parameter(2, cur.var_type());
+				stmtUpdate.set_parameter(3, nz);
+				stmtUpdate.set_parameter(4, cur.name());
+				stmtUpdate.set_parameter(5, cur.description());
+				stmtUpdate.set_parameter(6, nId);
+				if (!stmtUpdate.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			} else if (cur.is_valid()) {
+				stmtInsert.reset();
+				stmtInsert.set_parameter(1, nDatasetId);
+				stmtInsert.set_parameter(2, sigle);
+				stmtInsert.set_parameter(3, cur.var_type());
+				stmtInsert.set_parameter(4, nz);
+				stmtInsert.set_parameter(5, cur.name());
+				stmtInsert.set_parameter(6, cur.description());
+				if (!stmtInsert.exec()) {
+					this->rollback_transaction();
+					return (false);
+				}
+			}
+		} // it
+		if (!this->commit_transaction()) {
+			this->rollback_transaction();
+			return (false);
+		}
+		return (true);
+	} // maintains_variables
+	template<class TSTRING, class ALLOCANYPAIR>
+	bool get_variable_by_dataset_and_sigle(int nDatasetId,
+			const TSTRING &xSigle,
+			intra::StatVariable<TSTRING, ALLOCANYPAIR> &cur) {
+		assert(this->is_valid());
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_VARIABLE_BY_DATASET_AND_SIGLE);
+		if (!stmt.is_valid()) {
+			return (false);
+		}
+		TSTRING sx = boost::to_upper_copy(boost::trim_copy(xSigle));
+		stmt.set_parameter(1, nDatasetId);
+		stmt.set_parameter(2, sx);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		if (!stmt.has_values()) {
+			return (false);
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(0, v)) {
+				int nId = v.int_value();
+				cur.id(nId);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(1, v)) {
+				int nVersion = v.int_value();
+				cur.version(nVersion);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(2, v)) {
+				int nx = v.int_value();
+				cur.dataset_id(nx);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(3, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.sigle(s);
+				}
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(4, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.var_type(s);
+				}
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(5, v)) {
+				int nx = v.int_value();
+				bool b = (nx != 0) ? true : false;
+				cur.is_categvar(b);
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(6, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.name(s);
+				}
+			}
+		}
+		{
+			sqlite::DbValue v;
+			if (stmt.col_value(7, v)) {
+				TSTRING s;
+				if (v.string_value(s)) {
+					cur.description(s);
+				}
+			}
+		}
+		return (true);
+	} // get_variable_by_dataset_and_sigle
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVAR>
+	bool get_dataset_variables(int nDatasetId,
+			std::vector<intra::StatVariable<TSTRING, ALLOCANYPAIR>, ALLOCVAR> &oVec) {
+		assert(this->is_valid());
+		oVec.clear();
+		sqlite::Database *pBase = this->m_database.get();
+		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_VARIABLES);
+		if (!stmt.is_valid()) {
+			return (false);
+		}
+		stmt.set_parameter(1, nDatasetId);
+		if (!stmt.exec()) {
+			return (false);
+		}
+		while (stmt.has_values()) {
+			intra::StatVariable<TSTRING, ALLOCANYPAIR> cur;
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(2, v)) {
+					int nx = v.int_value();
+					cur.dataset_id(nx);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(3, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(4, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.var_type(s);
+					}
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(5, v)) {
+					int nx = v.int_value();
+					bool b = (nx != 0) ? true : false;
+					cur.is_categvar(b);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(6, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (stmt.col_value(7, v)) {
+					TSTRING s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+			oVec.push_back(cur);
+			if (!stmt.next()) {
+				break;
+			}
+		} // values
+		return (true);
+	} // get_dataset_variables
+	  //
 	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
 			class ALLOCINDIVPAIR>
 	bool remove_dataset(
@@ -373,7 +1140,26 @@ private:
 	/////////////////////////////////////
 	static const char *SQL_FIND_DATASET_VARIABLES;
 	static const char *SQL_VARIABLE_BY_DATASET_AND_SIGLE;
-};
+	static const char *SQL_INSERT_VARIABLE;
+	static const char *SQL_UPDATE_VARIABLE;
+	static const char *SQL_REMOVE_VARIABLE;
+	////////////////////////////////////////////
+	static const char *SQL_FIND_VARIABLE_TYPE;
+	static const char *SQL_FIND_DATASET_INDIVS_COUNT;
+	static const char *SQL_FIND_DATASET_INDIVS;
+	static const char *SQL_INDIV_BY_DATASET_AND_SIGLE;
+	static const char *SQL_INSERT_INDIV;
+	static const char *SQL_UPDATE_INDIV;
+	static const char *SQL_REMOVE_INDIV;
+	///////////////////////////////////////
+	static const char *SQL_FIND_DATASET_VALUES_COUNT;
+	static const char *SQL_FIND_DATASET_VALUES;
+	static const char *SQL_VALUES_BY_VARIABLE_INDIV;
+	static const char *SQL_INSERT_VALUE;
+	static const char *SQL_UPDATE_VALUE;
+	static const char *SQL_REMOVE_VALUE;
+}
+;
 ////////////////////////////////////
 } /* namespace intrasqlite */
 #endif /* STATDATAMANAGER_H_ */

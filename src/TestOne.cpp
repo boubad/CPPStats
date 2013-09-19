@@ -16,7 +16,12 @@ using namespace intrasqlite;
 const char *TEST_FILENAME = "./data/source.csv";
 const wchar_t *TEST_WFILENAME = L"./data/source.csv";
 const char *TEST_DATABASE_FILE = "./data/testbase.db";
+const char *TEST_DATASET_SIGLE = "APB2013";
+/////////////////////////////////////////
+extern bool import_data(const std::string &srcfilename,
+const std::string &databaseFilename, const std::string &datasetSigle);
 ////////////////////////////////////////
+#ifdef MYTOTO
 void mytest_db(void){
 	std::string filename(TEST_DATABASE_FILE);
 	StatDataManager oMan(filename);
@@ -109,19 +114,21 @@ void mytest_two() {
 } // mytest_two
 void mytest_three() {
 	typedef int IndexType;
-	ImportData<> oData;
-	typedef ImportData<>::AnyVectorType AnyVectorType;
+	typedef std::wstring StringType;
+	//
+	ImportData<StringType> oData;
+	typedef ImportData<StringType>::AnyVectorType AnyVectorType;
 	wifstream in(TEST_FILENAME);
 	wstring na = L"na";
 	wchar_t delim = L'\t';
 	oData.open(in, delim, na);
 	size_t ncols = oData.cols();
 	set<IndexType> colindexes;
-	vector<wstring> names;
+	vector<StringType> names;
 	for (size_t icol = 0; icol < ncols; ++icol) {
 		AnyVectorType v;
 		set<IndexType> oIndexes;
-		wstring name = oData.colname(icol);
+		StringType name = oData.colname(icol);
 		names.push_back(name);
 		colindexes.insert((IndexType)icol);
 		oData.get_indexes(colindexes, oIndexes);
@@ -140,13 +147,21 @@ void mytest_three() {
 		wcout << std::endl << L"Nb. vals: " << oIndexes.size() << L"/" << vx.size() << std::endl;
 	} // icol
 } // mytest_three
+#endif // MYTOTO
 /////////////////////////////////
 int main(int argc, char *argv[]) {
 	wcout << L"!!!Hello World!!!" << endl; // prints !!!Hello World!!!
 	//mytest_one();
 	//mytest_two();
-	//mytest_three();
-	mytest_db();
+	// mytest_three();
+	//mytest_db();
+	//
+	std::string src(TEST_FILENAME);
+	std::string dest(TEST_DATABASE_FILE);
+	std::string sigle(TEST_DATASET_SIGLE);
+	//
+	 bool bRet = import_data(src,dest, sigle);
+	//
 	wcout << std::endl << std::endl;
 	wcout << L"Entrez un nombre pour quitter. :" << std::endl;
 	int x;

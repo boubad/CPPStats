@@ -49,14 +49,27 @@ const char *StatDataManager::SQL_CREATE_VARIABLE =
 				" datasetid INTEGER NOT NULL,"
 				" sigle TEXT NOT NULL,"
 				" vartype TEXT NOT NULL,"
-				" categvar INTEGER NOT NULL DEFAULT 1,"
+				" categvar INTEGER NOT NULL DEFAULT 0,"
 				" nom TEXT DEFAULT NULL,"
 				" description TEXT DEFAULT NULL,"
 				" CONSTRAINT uc_variable UNIQUE (datasetid, sigle),"
 				" CONSTRAINT fk_variable_dataset FOREIGN KEY (datasetid) REFERENCES dbdataset (datasetid) ON DELETE CASCADE"
 				" )";
 /////////////////////////////////////////////////////////
-
+const char *StatDataManager::SQL_FIND_DATASET_VARIABLES =
+		"SELECT variableid, optlock, datasetid , sigle, vartype, categvar, nom, description"
+				" FROM dbvariable WHERE datasetid = ?1 ORDER BY categvar DESC, sigle ASC";
+const char *StatDataManager::SQL_VARIABLE_BY_DATASET_AND_SIGLE =
+		"SELECT variableid,optlock,datasetid,sigle,vartype,categvar,nom,description"
+				" FROM dbvariable WHERE datasetid = ?1 AND UPPER(LTRIM(RTRIM(sigle))) = ?2";
+const char *StatDataManager::SQL_INSERT_VARIABLE =
+		"INSERT INTO dbvariable (datasetid,sigle,vartype,categvar,nom,description)"
+				" VALUES (?1, ?2,?3,?4,?5,?6)";
+const char *StatDataManager::SQL_UPDATE_VARIABLE =
+		"UPDATE dbvariable SET optlock = optlock + 1,"
+				" sigle = ?1, vartype = ?2, categvar = ?3, nom = ?4, description = ?5 WHERE variableid = ?6";
+const char *StatDataManager::SQL_REMOVE_VARIABLE =
+		"DELETE FROM dbvariable WHERE variableid = ?1";
 ////////////////////////////////////////////////////////
 const char *StatDataManager::SQL_CREATE_INDIV =
 		"CREATE TABLE IF NOT EXISTS dbindiv("
@@ -69,6 +82,25 @@ const char *StatDataManager::SQL_CREATE_INDIV =
 				" CONSTRAINT uc_indiv UNIQUE (datasetid, sigle),"
 				" CONSTRAINT fk_indiv_dataset FOREIGN KEY (datasetid) REFERENCES dbdataset (datasetid) ON DELETE CASCADE"
 				" )";
+////////////////////////////////////////////////
+const char *StatDataManager::SQL_FIND_DATASET_INDIVS_COUNT =
+		"SELECT COUNT(*) FROM dbindiv"
+				" WHERE datasetid = ?1";
+const char *StatDataManager::SQL_FIND_DATASET_INDIVS =
+		"SELECT individ,optlock,datasetid,sigle,nom,description"
+				" FROM dbindiv WHERE datasetid = ?1 ORDER BY sigle";
+const char *StatDataManager::SQL_INDIV_BY_DATASET_AND_SIGLE =
+		"SELECT individ,optlock,datasetid,sigle,nom,description"
+				" FROM dbindiv WHERE datasetid = ?1 AND UPPER(LTRIM(RTRIM(sigle))) = ?2";
+const char *StatDataManager::SQL_INSERT_INDIV =
+		"INSERT INTO dbindiv (datasetid,sigle,nom,description)"
+				" VALUES(?1,?2,?3,?4)";
+const char *StatDataManager::SQL_UPDATE_INDIV =
+		"UPDATE dbindiv SET optlock = OPTLOCK + 1,"
+				" sigle = ?1, nom = ?2, description = ?3 WHERE individ = ?4";
+const char *StatDataManager::SQL_REMOVE_INDIV =
+		"REMOVE FROM dbindiv WHERE individ = ?1";
+////////////////////////////////////////////////
 const char *StatDataManager::SQL_CREATE_VALUE =
 		"CREATE TABLE IF NOT EXISTS dbvalue("
 				" valueid INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -80,6 +112,28 @@ const char *StatDataManager::SQL_CREATE_VALUE =
 				" CONSTRAINT fk_value_variable FOREIGN KEY (variableid) REFERENCES dbvariable (variableid) ON DELETE CASCADE,"
 				" CONSTRAINT fk_value_indiv FOREIGN KEY (individ) REFERENCES dbindiv (individ) ON DELETE CASCADE"
 				" )";
+/////////////////////////////////////////////////////
+const char *StatDataManager::SQL_FIND_VARIABLE_TYPE = "SELECT vartype FROM dbvariable WHERE variableid = ?1";
+const char *StatDataManager::SQL_FIND_DATASET_VALUES_COUNT = "SELECT COUNT(*)"
+		" FROM dbvalue a, dbvariable b"
+		" WHERE a.vaiableid = b.variableid AND b.datasetid = ?1";
+const char *StatDataManager::SQL_FIND_DATASET_VALUES =
+		"SELECT a.valueid,a.optlock,a.variableid,a.individ,a.stringval"
+				" FROM dbvalue a, dbvariable b"
+				" WHERE a.variableid = b.variableid AND b.datasetid = ?1"
+				" ORDER BY a.variableid ASC, a.individ";
+const char *StatDataManager::SQL_VALUES_BY_VARIABLE_INDIV =
+		"SELECT valueid,optlock,variableid,individ,stringval"
+				" FROM dbvalue WHERE variableid = ?1 AND individ = ?2";
+const char *StatDataManager::SQL_INSERT_VALUE =
+		"INSERT INTO dbvalue (variableid,individ,stringval)"
+				" VALUES(?1,?2,?3)";
+const char *StatDataManager::SQL_UPDATE_VALUE =
+		"UPDATE dbvalue SET optlock = optlock + 1,"
+				" stringval = ?1 WHERE valueid = ?2 ";
+const char *StatDataManager::SQL_REMOVE_VALUE =
+		"DELETE from dbvalue WHERE valueid = ?1";
+//////////////////////////////////////////////////////
 const char *StatDataManager::CREATE_SQL[] = {
 		StatDataManager::SQL_CREATE_DATASET,
 		StatDataManager::SQL_CREATE_VARIABLE, StatDataManager::SQL_CREATE_INDIV,
