@@ -522,7 +522,7 @@ template<class TSTRING = std::string, class ALLOCANYPAIR = std::allocator<
 class StatVariable {
 public:
 	typedef TSTRING StringType;
-	typedef StatVariable<TSTRING> VariableType;
+	typedef StatVariable<TSTRING,ALLOCANYPAIR> VariableType;
 	typedef std::map<int, StatValue, std::less<int>, ALLOCANYPAIR> ValuesMapType;
 private:
 	int m_id;

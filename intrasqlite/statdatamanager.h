@@ -239,6 +239,7 @@ public:
 					if (oMap.find(nx) != oMap.end()) {
 						vartype = oMap[nx];
 					} else {
+						stmtVarType.reset();
 						stmtVarType.set_parameter(1, nx);
 						if (!stmtVarType.exec()) {
 							return (false);
@@ -388,7 +389,7 @@ public:
 		if (!stmt.is_valid()) {
 			return (false);
 		}
-		TSTRING sigle =  boost::to_upper_copy(boost::trim_copy(xSigle));
+		TSTRING sigle = boost::to_upper_copy(boost::trim_copy(xSigle));
 		stmt.set_parameter(1, nDatasetId);
 		stmt.set_parameter(2, sigle);
 		if (!stmt.exec()) {
@@ -800,6 +801,78 @@ public:
 		return (true);
 	} // get_dataset_variables
 	  //
+	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
+			class ALLOCINDIVPAIR>
+	bool load_dataset(
+			intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+					ALLOCINDIVPAIR> &cur) {
+		//
+		typedef intra::StatDataset<TSTRING, ALLOCANYPAIR, ALLOCVARPAIR,
+				ALLOCINDIVPAIR> DatasetType;
+		typedef intra::StatVariable<TSTRING, ALLOCANYPAIR> VariableType;
+		typedef intra::StatIndiv<TSTRING> IndivType;
+		typedef std::map<int, VariableType, std::less<int>, ALLOCVARPAIR> VariablesMapType;
+		typedef std::map<int, IndivType, std::less<int>, ALLOCINDIVPAIR> IndivsMapType;
+		typedef intra::StatValue ValueType;
+		typedef std::map<int, intra::StatValue, std::less<int>, ALLOCANYPAIR> ValuesMapType;
+		//
+		int nId = cur.id();
+		bool bOk = false;
+		if (nId != 0) {
+			bOk = this->get_dataset_by_id(nId, cur);
+		}
+		if (!bOk) {
+			const TSTRING sigle = cur.sigle();
+			if (!this->get_dataset_by_sigle(sigle, cur)) {
+				return (false);
+			}
+			nId = cur.id();
+		}
+		std::vector<VariableType> vecVars;
+		if (!this->get_dataset_variables(nId, vecVars)) {
+			return (false);
+		}
+		std::vector<IndivType> vecInds;
+		if (!this->get_dataset_indivs(nId, vecInds)) {
+			return (false);
+		}
+		std::vector<ValueType> vecVals;
+		if (!this->get_dataset_values(nId, vecVals)) {
+			return (false);
+		}
+		VariablesMapType &vars = cur.variables();
+		vars.clear();
+		IndivsMapType &inds = cur.indivs();
+		inds.clear();
+		for (auto it = vecInds.begin(); it != vecInds.end(); ++it) {
+			IndivType v = *it;
+			int key = v.id();
+			inds[key] = v;
+		}	  // it
+		for (auto it = vecVars.begin(); it != vecVars.end(); ++it) {
+			VariableType vx = *it;
+			int key = vx.id();
+			ValuesMapType &vals = vx.values_map();
+			vals.clear();
+			vars[key] = vx;
+		}	  // it
+		for (auto it = vecVals.begin(); it != vecVals.end(); ++it) {
+			ValueType val = *it;
+			if (val.is_empty()) {
+				continue;
+			}
+			int nVarId = val.variable_id();
+			auto fv = vars.find(nVarId);
+			if (fv != vars.end()) {
+				VariableType &vx = (*fv).second;
+				ValuesMapType &vals = vx.values_map();
+				int nIndivId = val.indiv_id();
+				vals[nIndivId] = val;
+			}	  // fv
+		}	  // it
+			  //
+		return (true);
+	}	  // load_dataset
 	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,
 			class ALLOCINDIVPAIR>
 	bool remove_dataset(

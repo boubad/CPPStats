@@ -20,6 +20,8 @@ const char *TEST_DATASET_SIGLE = "APB2013";
 /////////////////////////////////////////
 extern bool import_data(const std::string &srcfilename,
 const std::string &databaseFilename, const std::string &datasetSigle);
+extern bool load_test_data(const std::string &databaseFilename,
+		const std::string &datasetSigle);
 ////////////////////////////////////////
 #ifdef MYTOTO
 void mytest_db(void){
@@ -160,7 +162,8 @@ int main(int argc, char *argv[]) {
 	std::string dest(TEST_DATABASE_FILE);
 	std::string sigle(TEST_DATASET_SIGLE);
 	//
-	 bool bRet = import_data(src,dest, sigle);
+	// bool bRet = import_data(src,dest, sigle);
+	bool bRet = load_test_data(dest,sigle);
 	//
 	wcout << std::endl << std::endl;
 	wcout << L"Entrez un nombre pour quitter. :" << std::endl;

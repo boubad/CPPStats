@@ -13,12 +13,40 @@
 using namespace std;
 using namespace intra;
 using namespace intrasqlite;
+/////////////////////////////////////////
+extern bool load_test_data(const std::string &databaseFilename,
+		const std::string &datasetSigle) {
+	typedef std::string StringType;
+	//
+	typedef StatDataset<StringType> DatasetType;
+	try {
+		StatDataManager oMan(databaseFilename);
+		bool bRet = oMan.is_valid();
+		if (!bRet) {
+			return (false);
+		}
+		DatasetType oDataset;
+		oDataset.sigle(datasetSigle);
+		bRet = oMan.load_dataset(oDataset);
+		if (bRet){
+			std::cout << std::endl << "DATASET LOADED!!!!" << std::endl;
+		} else {
+			std::cout << std::endl << "DATASET LOAD ERROR ..." << std::endl;
+		}
+	} catch (std::exception &ex) {
+		std::cout << std::endl << "ERROR...!: " << ex.what() << std::endl;
+		return (false);
+	} catch (...) {
+		return (false);
+	}
+	return (true);
+} // load_test_data
 ///////////////////////////////////
 extern bool import_data(const std::string &srcfilename,
 		const std::string &databaseFilename, const std::string &datasetSigle) {
 	typedef int IndexType;
 	typedef std::string StringType;
-	//
+//
 	typedef ImportData<StringType> ImportDataType;
 	typedef ImportDataType::AnyVectorType AnyVectorType;
 	typedef StatDataset<StringType> DatasetType;
@@ -26,7 +54,7 @@ extern bool import_data(const std::string &srcfilename,
 	typedef DatasetType::IndivType IndivType;
 	typedef DatasetType::VariablesMapType VariablesMapType;
 	typedef DatasetType::IndivsMapType IndivsMapType;
-	//
+//
 	try {
 		ImportDataType oData;
 		std::ifstream in(srcfilename.c_str());
@@ -159,11 +187,11 @@ extern bool import_data(const std::string &srcfilename,
 			return (false);
 		}
 		IndivsMapType &mz = oDataset.indivs();
-		for (auto it = oVecx.begin(); it != oVecx.end(); ++it){
+		for (auto it = oVecx.begin(); it != oVecx.end(); ++it) {
 			IndivType ind = *it;
 			int key = ind.id();
 			mz[key] = ind;
-		}// it
+		} // it
 		  //
 		for (size_t icol = 0; icol < ncols; ++icol) {
 			std::string siglecol = oData.colname(icol);
@@ -187,7 +215,8 @@ extern bool import_data(const std::string &srcfilename,
 						std::stringstream os;
 						os << "I" << nx;
 						std::string sigleindiv = os.str();
-						const IndivType *pInd = oDataset.find_indiv_by_sigle(sigleindiv);
+						const IndivType *pInd = oDataset.find_indiv_by_sigle(
+								sigleindiv);
 						if (pInd == nullptr) {
 							continue;
 						}
