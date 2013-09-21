@@ -197,7 +197,8 @@ public:
 	} // get_dataset_indivs
 	template<class ALLOCVEC>
 	bool get_dataset_values(int nDatasetId,
-			std::vector<intra::StatValue, ALLOCVEC> &oVec) {
+			std::vector<intra::StatValue, ALLOCVEC> &oVec, int skip,
+			int taken) {
 		assert(this->is_valid());
 		oVec.clear();
 		sqlite::Database *pBase = this->m_database.get();
@@ -207,10 +208,9 @@ public:
 		if ((!stmt.is_valid()) || (!stmtVarType.is_valid())) {
 			return (false);
 		}
-		if (!stmt.is_valid()) {
-			return (false);
-		}
 		stmt.set_parameter(1, nDatasetId);
+		stmt.set_parameter(2, taken);
+		stmt.set_parameter(3, skip);
 		if (!stmt.exec()) {
 			return (false);
 		}
@@ -815,6 +815,9 @@ public:
 		typedef std::map<int, IndivType, std::less<int>, ALLOCINDIVPAIR> IndivsMapType;
 		typedef intra::StatValue ValueType;
 		typedef std::map<int, intra::StatValue, std::less<int>, ALLOCANYPAIR> ValuesMapType;
+		typedef std::shared_ptr<ValueType> ValuePtr;
+		typedef std::shared_ptr<IndivType> IndivTypePtr;
+		typedef std::shared_ptr<VariableType> VariableTypePtr;
 		//
 		int nId = cur.id();
 		bool bOk = false;
@@ -836,41 +839,48 @@ public:
 		if (!this->get_dataset_indivs(nId, vecInds)) {
 			return (false);
 		}
-		std::vector<ValueType> vecVals;
-		if (!this->get_dataset_values(nId, vecVals)) {
+		cur.clear_data();
+		std::for_each(vecInds.begin(), vecInds.end(), [&](const IndivType &v) {
+			cur.add_indiv(v);
+		});
+		std::for_each(vecVars.begin(), vecVars.end(),
+				[&](const VariableType &v) {
+					cur.add_variable(v);
+				});
+		int nCount = 0;
+		if (!this->get_dataset_values_count(nId, nCount)) {
 			return (false);
 		}
-		VariablesMapType &vars = cur.variables();
-		vars.clear();
-		IndivsMapType &inds = cur.indivs();
-		inds.clear();
-		for (auto it = vecInds.begin(); it != vecInds.end(); ++it) {
-			IndivType v = *it;
-			int key = v.id();
-			inds[key] = v;
-		}	  // it
-		for (auto it = vecVars.begin(); it != vecVars.end(); ++it) {
-			VariableType vx = *it;
-			int key = vx.id();
-			ValuesMapType &vals = vx.values_map();
-			vals.clear();
-			vars[key] = vx;
-		}	  // it
-		for (auto it = vecVals.begin(); it != vecVals.end(); ++it) {
-			ValueType val = *it;
-			if (val.is_empty()) {
-				continue;
+		if (nCount < 1) {
+			return (true);
+		}
+		int skip = 0;
+		int taken = 100;
+		while (skip < nCount) {
+			std::vector<ValueType> vecVals;
+			if (!this->get_dataset_values(nId, vecVals, skip, taken)) {
+				return (false);
 			}
-			int nVarId = val.variable_id();
-			auto fv = vars.find(nVarId);
-			if (fv != vars.end()) {
-				VariableType &vx = (*fv).second;
-				ValuesMapType &vals = vx.values_map();
-				int nIndivId = val.indiv_id();
-				vals[nIndivId] = val;
-			}	  // fv
-		}	  // it
-			  //
+			if (vecVals.empty()) {
+				break;
+			}
+			std::for_each(vecVals.begin(), vecVals.end(),
+					[&](const ValueType &val) {
+						if (!val.is_empty()) {
+							int nVarId = val.variable_id();
+							const VariableType *pVar = cur.find_variable_by_id(nVarId);
+							if (pVar != nullptr) {
+								int nIndivId = val.indiv_id();
+								const IndivType *pInd = cur.find_indiv_by_id(nIndivId);
+								if (pInd != nullptr) {
+									VariableType *p = const_cast<VariableType *>(pVar);
+									p->add_value(val);
+								}	  // pInd
+							}	  // pVar
+						}	  // not_empty
+					});
+			skip += taken;
+		}	  // while skip
 		return (true);
 	}	  // load_dataset
 	template<class TSTRING, class ALLOCANYPAIR, class ALLOCVARPAIR,

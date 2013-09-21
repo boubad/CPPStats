@@ -116,12 +116,13 @@ const char *StatDataManager::SQL_CREATE_VALUE =
 const char *StatDataManager::SQL_FIND_VARIABLE_TYPE = "SELECT vartype FROM dbvariable WHERE variableid = ?1";
 const char *StatDataManager::SQL_FIND_DATASET_VALUES_COUNT = "SELECT COUNT(*)"
 		" FROM dbvalue a, dbvariable b"
-		" WHERE a.vaiableid = b.variableid AND b.datasetid = ?1";
+		" WHERE a.variableid = b.variableid AND b.datasetid = ?1";
 const char *StatDataManager::SQL_FIND_DATASET_VALUES =
 		"SELECT a.valueid,a.optlock,a.variableid,a.individ,a.stringval"
 				" FROM dbvalue a, dbvariable b"
 				" WHERE a.variableid = b.variableid AND b.datasetid = ?1"
-				" ORDER BY a.variableid ASC, a.individ";
+				" ORDER BY a.variableid ASC, a.individ ASC"
+				" LIMIT ?2 OFFSET ?3";
 const char *StatDataManager::SQL_VALUES_BY_VARIABLE_INDIV =
 		"SELECT valueid,optlock,variableid,individ,stringval"
 				" FROM dbvalue WHERE variableid = ?1 AND individ = ?2";

@@ -42,6 +42,7 @@ extern bool load_test_data(const std::string &databaseFilename,
 	return (true);
 } // load_test_data
 ///////////////////////////////////
+#ifdef MYTOTO
 extern bool import_data(const std::string &srcfilename,
 		const std::string &databaseFilename, const std::string &datasetSigle) {
 	typedef int IndexType;
@@ -246,4 +247,5 @@ extern bool import_data(const std::string &srcfilename,
 	}
 	return (true);
 } // get_import_data
+#endif // MYTOTO
 
